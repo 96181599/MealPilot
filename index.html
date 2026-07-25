@@ -230,6 +230,30 @@
   .spend-card .sc-amount{ font-family:'IBM Plex Mono'; font-size:24px; font-weight:500; margin-top:6px; color: var(--chalk); }
   .spend-card.total .sc-amount{ color: var(--mustard); }
 
+  .donut-card{
+    display:flex; align-items:center; gap:28px; flex-wrap:wrap;
+    background: var(--card); border:1px solid var(--card-line); border-radius:10px;
+    padding: 18px 20px; margin-top: 16px;
+  }
+  .donut-wrap{ flex-shrink:0; }
+  .donut-chart{
+    width:140px; height:140px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    background: conic-gradient(var(--card-line) 0deg 360deg);
+  }
+  .donut-hole{
+    width:88px; height:88px; border-radius:50%; background: var(--card);
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+  }
+  .donut-total-label{ font-family:'IBM Plex Mono'; font-size:9px; color:var(--sage); letter-spacing:0.06em; }
+  .donut-total-amount{ font-family:'IBM Plex Mono'; font-size:15px; font-weight:600; color:var(--chalk); margin-top:3px; text-align:center; }
+  .donut-legend{ flex:1; min-width:180px; display:flex; flex-direction:column; gap:8px; }
+  .donut-legend-row{ display:flex; align-items:center; gap:9px; font-size:13px; }
+  .donut-swatch{ width:11px; height:11px; border-radius:3px; flex-shrink:0; }
+  .donut-legend-name{ flex:1; color: var(--chalk-dim); }
+  .donut-legend-pct{ font-family:'IBM Plex Mono'; font-size:11.5px; color: var(--sage); min-width:38px; text-align:right; }
+  .donut-legend-amt{ font-family:'IBM Plex Mono'; font-size:12.5px; color: var(--chalk); min-width:80px; text-align:right; }
+
   .spend-calendar{
     display:grid;
     grid-template-columns: repeat(7, 1fr);
@@ -284,6 +308,30 @@
   .fi-expected{ font-family:'IBM Plex Mono'; font-size:11.5px; color: var(--sage); }
   .fixed-item button{ background:none; border:none; color:var(--coral); cursor:pointer; font-size:16px; opacity:0.6; }
   .fixed-item button:hover{ opacity:1; }
+
+  .scan-row{
+    display:flex; gap:6px; align-items:center; flex-wrap:wrap;
+    padding: 9px 4px; border-bottom: 1px dashed rgba(255,255,255,0.06);
+  }
+  .scan-row input, .scan-row select{
+    padding:7px 8px; border-radius:6px; border:1px solid var(--card-line);
+    background: var(--board-dark); color: var(--chalk); font-family:'Inter'; font-size:13px;
+  }
+  .scan-row .scan-date{ width:130px; }
+  .scan-row .scan-note{ flex:1; min-width:120px; }
+  .scan-row .scan-amount{ width:100px; }
+  .scan-row .scan-cat{ width:120px; }
+  .scan-row button{ background:none; border:none; color:var(--coral); cursor:pointer; font-size:16px; opacity:0.6; }
+  .scan-row button:hover{ opacity:1; }
+  .scan-actions{ display:flex; gap:8px; margin-top:12px; }
+
+  .api-key-row{
+    display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:6px;
+  }
+  .api-key-row input{
+    flex:1; min-width:180px; padding:8px 9px; border-radius:6px; border:1px solid var(--card-line);
+    background: var(--board-dark); color: var(--chalk); font-family:'IBM Plex Mono'; font-size:13px;
+  }
 
   .spend-form{
     display:flex; gap:8px; flex-wrap:wrap; align-items:flex-end;
@@ -411,6 +459,12 @@
     .range-filter input{ width:100%; }
     #fixed-expense-card .reminder-add-row{ flex-direction: column; }
     #fixed-expense-card .reminder-add-row input, #fixed-expense-card .reminder-add-row select{ width:100%; }
+    .scan-row{ flex-direction: column; align-items: stretch; }
+    .scan-row input, .scan-row select{ width:100%; }
+    #scan-card .row{ flex-wrap: wrap; }
+    .donut-card{ flex-direction: column; align-items: stretch; text-align:center; }
+    .donut-wrap{ align-self:center; }
+    .donut-legend{ width:100%; }
   }
 </style>
 </head>
@@ -499,6 +553,18 @@
     </div>
     <div class="spend-summary" id="spend-summary"></div>
 
+    <div class="donut-card" id="donut-card">
+      <div class="donut-wrap">
+        <div class="donut-chart" id="donut-chart">
+          <div class="donut-hole">
+            <div class="donut-total-label">TOTAL</div>
+            <div class="donut-total-amount" id="donut-total-amount">₹0</div>
+          </div>
+        </div>
+      </div>
+      <div class="donut-legend" id="donut-legend"></div>
+    </div>
+
     <div class="spend-calendar" id="spend-calendar"></div>
     <div class="row" id="day-filter-row" style="display:none; margin-top:10px;">
       <div style="color:var(--mustard); font-size:13px;" id="day-filter-label"></div>
@@ -516,6 +582,34 @@
       </div>
       <button class="btn btn-ghost" id="btn-apply-range">Apply range</button>
       <button class="btn btn-ghost" id="btn-clear-range" style="display:none;">Clear range</button>
+    </div>
+
+    <!-- Scan expenses from a screenshot -->
+    <div class="reminder-card" id="scan-card">
+      <div class="reminder-card-title">📷 Scan expenses from a screenshot</div>
+      <div style="color:var(--sage); font-size:12.5px; margin-bottom:10px;">
+        Upload a screenshot of your purchase history — MealPilot will try to pull out each item and amount using Google's Gemini API. Always review before adding.
+      </div>
+
+      <div class="api-key-row" id="api-key-row">
+        <input type="password" id="gemini-key-input" placeholder="Paste your Gemini API key">
+        <button class="btn btn-ghost" id="btn-save-gemini-key">Save key</button>
+        <span id="gemini-key-status" style="font-size:12px; color:var(--sage);"></span>
+      </div>
+      <div style="color:var(--sage); font-size:11.5px; margin-bottom:14px;">
+        Stored only in this browser (never synced, never exported) — get a free key at
+        <a href="https://aistudio.google.com/apikey" target="_blank" style="color:var(--mustard);">aistudio.google.com/apikey</a>.
+      </div>
+
+      <input type="file" id="scan-file-input" accept="image/*" style="display:none;">
+      <div class="row" style="gap:8px;">
+        <button class="btn btn-ghost" id="btn-choose-scan">Choose screenshot</button>
+        <span id="scan-file-name" style="color:var(--sage); font-size:12.5px;"></span>
+        <div class="spacer"></div>
+        <button class="btn btn-primary" id="btn-extract-scan" disabled>Extract expenses</button>
+      </div>
+      <div id="scan-status" style="color:var(--mustard); font-size:12.5px; margin-top:10px; display:none;"></div>
+      <div id="scan-results"></div>
     </div>
 
     <div class="spend-form">
@@ -541,6 +635,10 @@
       <div class="field">
         <label>Note (optional)</label>
         <input type="text" id="sp-note" placeholder="e.g. Trader Joe's">
+      </div>
+      <div class="field" style="display:flex; align-items:center; gap:7px; padding-bottom:9px;">
+        <input type="checkbox" id="sp-recurring" style="width:16px; height:16px; accent-color: var(--mustard); cursor:pointer;">
+        <label for="sp-recurring" style="margin:0; text-transform:none; font-weight:500; font-size:13px; cursor:pointer;">Recurring — also add to Fixed Expenses</label>
       </div>
       <button class="btn btn-primary" id="btn-add-spend">+ Add expense</button>
     </div>
@@ -1144,6 +1242,7 @@ document.getElementById('btn-gen-prep').addEventListener('click', () => {
 // ---------- Spending ----------
 const SPEND_CATS = ['grocery','restaurants','coffee','health','utility','other'];
 const SPEND_CAT_LABELS = { grocery:'Grocery', restaurants:'Restaurants', coffee:'Coffee', health:'Health & wellness', utility:'Utility', other:'Other' };
+const SPEND_CAT_COLORS = { grocery:'#7A9285', restaurants:'#D97862', coffee:'#E3A335', health:'#7FA3C0', utility:'#A392C4', other:'#B79A73' };
 
 let spendViewMonth = new Date(); // transient, not persisted — always opens on current month
 let selectedSpendDay = null;      // "YYYY-MM-DD" or null
@@ -1152,6 +1251,41 @@ let activeRange = null;            // {from:"YYYY-MM-DD", to:"YYYY-MM-DD"} or nu
 function pad2(n){ return String(n).padStart(2,'0'); }
 function monthKeyOf(d){ return d.getFullYear() + '-' + pad2(d.getMonth()+1); }
 function inr(n){ return '₹' + n.toLocaleString('en-IN', {minimumFractionDigits:2, maximumFractionDigits:2}); }
+
+function renderDonutChart(totals, grandTotal){
+  const chart = document.getElementById('donut-chart');
+  const legend = document.getElementById('donut-legend');
+  document.getElementById('donut-total-amount').textContent = inr(grandTotal).replace('.00','');
+
+  if(grandTotal <= 0){
+    chart.style.background = 'conic-gradient(var(--card-line) 0deg 360deg)';
+    legend.innerHTML = '<div class="reminder-empty">No expenses to chart yet.</div>';
+    return;
+  }
+
+  let cursor = 0;
+  const segments = [];
+  SPEND_CATS.forEach(c => {
+    const amt = totals[c];
+    if(amt <= 0) return;
+    const degrees = (amt / grandTotal) * 360;
+    segments.push(`${SPEND_CAT_COLORS[c]} ${cursor}deg ${cursor + degrees}deg`);
+    cursor += degrees;
+  });
+  chart.style.background = `conic-gradient(${segments.join(', ')})`;
+
+  legend.innerHTML = SPEND_CATS.filter(c => totals[c] > 0).map(c => {
+    const pct = ((totals[c] / grandTotal) * 100).toFixed(1);
+    return `
+      <div class="donut-legend-row">
+        <div class="donut-swatch" style="background:${SPEND_CAT_COLORS[c]};"></div>
+        <div class="donut-legend-name">${SPEND_CAT_LABELS[c]}</div>
+        <div class="donut-legend-pct">${pct}%</div>
+        <div class="donut-legend-amt">${inr(totals[c])}</div>
+      </div>
+    `;
+  }).join('');
+}
 
 function renderSpending(){
   const summary = document.getElementById('spend-summary');
@@ -1184,6 +1318,8 @@ function renderSpending(){
   summary.innerHTML =
     SPEND_CATS.map(c => `<div class="spend-card"><div class="sc-label">${SPEND_CAT_LABELS[c]}</div><div class="sc-amount">${inr(totals[c])}</div></div>`).join('') +
     `<div class="spend-card total"><div class="sc-label">${totalLabel}</div><div class="sc-amount">${inr(grandTotal)}</div></div>`;
+
+  renderDonutChart(totals, grandTotal);
 
   // ---- Calendar grid (always reflects the viewed month) ----
   const byDay = {};
@@ -1415,6 +1551,203 @@ document.getElementById('btn-clear-day-filter').addEventListener('click', () => 
   renderSpending();
 });
 
+// ---- Scan expenses from a screenshot (Gemini API) ----
+const GEMINI_KEY_STORAGE = 'mealpilot-gemini-key'; // always browser-local: never synced, never exported
+let scanSelectedFile = null;
+
+function loadGeminiKey(){
+  try{ return localStorage.getItem(GEMINI_KEY_STORAGE) || ''; }catch(e){ return ''; }
+}
+function saveGeminiKey(key){
+  try{ localStorage.setItem(GEMINI_KEY_STORAGE, key); }catch(e){ console.error('Could not save key', e); }
+}
+
+(function initGeminiKeyField(){
+  const existing = loadGeminiKey();
+  const input = document.getElementById('gemini-key-input');
+  const status = document.getElementById('gemini-key-status');
+  if(existing){
+    input.value = existing;
+    status.textContent = '✓ Key saved';
+  }
+  document.getElementById('btn-save-gemini-key').addEventListener('click', () => {
+    const val = input.value.trim();
+    if(!val){ status.textContent = 'Enter a key first.'; return; }
+    saveGeminiKey(val);
+    status.textContent = '✓ Key saved';
+  });
+})();
+
+document.getElementById('btn-choose-scan').addEventListener('click', () => {
+  document.getElementById('scan-file-input').click();
+});
+
+document.getElementById('scan-file-input').addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if(!file) return;
+  scanSelectedFile = file;
+  document.getElementById('scan-file-name').textContent = file.name;
+  document.getElementById('btn-extract-scan').disabled = false;
+});
+
+function fileToBase64(file){
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result.split(',')[1]);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+document.getElementById('btn-extract-scan').addEventListener('click', async () => {
+  if(!scanSelectedFile) return;
+  const statusEl = document.getElementById('scan-status');
+  const resultsEl = document.getElementById('scan-results');
+  const extractBtn = document.getElementById('btn-extract-scan');
+  statusEl.style.display = 'block';
+  statusEl.textContent = 'Reading image…';
+  extractBtn.disabled = true;
+  resultsEl.innerHTML = '';
+
+  const apiKey = loadGeminiKey();
+  if(!apiKey){
+    statusEl.textContent = 'Paste and save your Gemini API key above first.';
+    extractBtn.disabled = false;
+    return;
+  }
+
+  try{
+    const base64Data = await fileToBase64(scanSelectedFile);
+    const mediaType = scanSelectedFile.type || 'image/png';
+
+    statusEl.textContent = 'Extracting purchases… this can take a few seconds.';
+
+    const todayStr = todayKey();
+    const promptText = `You are looking at a screenshot of a purchase/order history from a shopping or delivery app. Extract every individual purchase or transaction you can find.
+
+Return ONLY a raw JSON array (no markdown fences, no commentary, no explanation) where each element has this exact shape:
+{"date": "YYYY-MM-DD or null if not visible in the image", "note": "short item or merchant name", "amount": number (just the numeric value, no currency symbol), "category": one of "grocery","restaurants","coffee","health","utility","other" (your best guess based on the item/merchant name)}
+
+Rules:
+- If a date is visible, use it. If no year is visible, assume the current year. If no date is visible at all for an entry, use null.
+- If multiple items are listed under one order/receipt, extract them as separate entries if individual prices are shown; otherwise extract the order as one entry with the total.
+- Amount must be a plain number (e.g. 249.00), not a string, and not include currency symbols.
+- Today's date for reference is ${todayStr}.
+- If you cannot find any purchases in the image, return an empty array: []`;
+
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${encodeURIComponent(apiKey)}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{
+            parts: [
+              { inline_data: { mime_type: mediaType, data: base64Data } },
+              { text: promptText }
+            ]
+          }]
+        })
+      }
+    );
+
+    const data = await response.json();
+
+    if(data.error){
+      statusEl.textContent = `Gemini API error: ${data.error.message || 'request failed'}. Double-check your API key.`;
+      extractBtn.disabled = false;
+      return;
+    }
+
+    const parts = (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts) || [];
+    const textBlock = parts.map(p => p.text || '').join('\n');
+    const cleaned = textBlock.replace(/```json|```/g, '').trim();
+
+    let items;
+    try{
+      items = JSON.parse(cleaned);
+    }catch(parseErr){
+      statusEl.textContent = "Couldn't parse a clean result from the image. Try a clearer or less cluttered screenshot.";
+      extractBtn.disabled = false;
+      return;
+    }
+
+    if(!Array.isArray(items) || items.length === 0){
+      statusEl.textContent = 'No purchases found in that image. Try a screenshot that more clearly shows item names and prices.';
+      extractBtn.disabled = false;
+      return;
+    }
+
+    statusEl.textContent = `Found ${items.length} item${items.length===1?'':'s'} — review and edit before adding:`;
+    renderScanResults(items);
+  }catch(err){
+    console.error(err);
+    statusEl.textContent = 'Something went wrong extracting from that image. Please try again.';
+  }
+  extractBtn.disabled = false;
+});
+
+function renderScanResults(items){
+  const resultsEl = document.getElementById('scan-results');
+  resultsEl.innerHTML = '';
+  const todayStr = todayKey();
+
+  items.forEach((item, idx) => {
+    const row = document.createElement('div');
+    row.className = 'scan-row';
+    row.dataset.idx = idx;
+    const dateVal = (item.date && /^\d{4}-\d{2}-\d{2}$/.test(item.date)) ? item.date : todayStr;
+    const cat = SPEND_CATS.includes(item.category) ? item.category : 'other';
+    row.innerHTML = `
+      <input type="date" class="scan-date" value="${dateVal}">
+      <input type="text" class="scan-note" value="${escapeHtml(item.note || '')}" placeholder="item / merchant">
+      <input type="number" class="scan-amount" value="${item.amount || ''}" step="0.01" min="0">
+      <select class="scan-cat">
+        ${SPEND_CATS.map(c => `<option value="${c}" ${c===cat?'selected':''}>${SPEND_CAT_LABELS[c]}</option>`).join('')}
+      </select>
+      <button title="discard this row" data-remove-scan>×</button>
+    `;
+    row.querySelector('[data-remove-scan]').addEventListener('click', () => row.remove());
+    resultsEl.appendChild(row);
+  });
+
+  const actions = document.createElement('div');
+  actions.className = 'scan-actions';
+  actions.innerHTML = `
+    <button class="btn btn-primary" id="btn-confirm-scan">Add all to expenses</button>
+    <button class="btn btn-ghost" id="btn-discard-scan">Discard all</button>
+  `;
+  resultsEl.appendChild(actions);
+
+  document.getElementById('btn-confirm-scan').addEventListener('click', () => {
+    const rows = resultsEl.querySelectorAll('.scan-row');
+    let addedCount = 0;
+    rows.forEach(row => {
+      const date = row.querySelector('.scan-date').value;
+      const note = row.querySelector('.scan-note').value.trim();
+      const amount = parseFloat(row.querySelector('.scan-amount').value);
+      const category = row.querySelector('.scan-cat').value;
+      if(!date || !amount || amount <= 0) return;
+      state.expenses.push({ id: uid(), date, category, amount, note });
+      addedCount++;
+    });
+    saveState();
+    resultsEl.innerHTML = '';
+    document.getElementById('scan-status').textContent = `Added ${addedCount} expense${addedCount===1?'':'s'}.`;
+    document.getElementById('scan-file-name').textContent = '';
+    document.getElementById('scan-file-input').value = '';
+    scanSelectedFile = null;
+    document.getElementById('btn-extract-scan').disabled = true;
+    spendViewMonth = new Date();
+    renderSpending();
+  });
+
+  document.getElementById('btn-discard-scan').addEventListener('click', () => {
+    resultsEl.innerHTML = '';
+    document.getElementById('scan-status').style.display = 'none';
+  });
+}
+
 document.getElementById('sp-date').valueAsDate = new Date();
 
 document.getElementById('btn-add-spend').addEventListener('click', () => {
@@ -1422,18 +1755,37 @@ document.getElementById('btn-add-spend').addEventListener('click', () => {
   const amountVal = parseFloat(document.getElementById('sp-amount').value);
   const category = document.getElementById('sp-category').value;
   const note = document.getElementById('sp-note').value.trim();
+  const isRecurring = document.getElementById('sp-recurring').checked;
 
   if(!dateVal){ alert('Pick a date.'); return; }
   if(!amountVal || amountVal <= 0){ alert('Enter an amount greater than 0.'); return; }
 
   state.expenses = state.expenses || [];
-  state.expenses.push({ id: uid(), date: dateVal, category, amount: amountVal, note });
+  const newExpense = { id: uid(), date: dateVal, category, amount: amountVal, note };
+  state.expenses.push(newExpense);
+
+  if(isRecurring){
+    const templateName = note || SPEND_CAT_LABELS[category];
+    let template = state.fixedExpenseTemplates.find(
+      t => t.name.toLowerCase() === templateName.toLowerCase() && t.category === category
+    );
+    if(!template){
+      template = { id: uid(), name: templateName, expectedAmount: amountVal, category };
+      state.fixedExpenseTemplates.push(template);
+    }
+    const expenseMonthKey = dateVal.slice(0,7);
+    if(!state.fixedChecks[expenseMonthKey]) state.fixedChecks[expenseMonthKey] = {};
+    state.fixedChecks[expenseMonthKey][template.id] = newExpense.id;
+  }
+
   saveState();
   document.getElementById('sp-amount').value = '';
   document.getElementById('sp-note').value = '';
+  document.getElementById('sp-recurring').checked = false;
   // Jump the calendar to the month of the expense just added, so it's immediately visible
   spendViewMonth = new Date(dateVal + 'T00:00:00');
   renderSpending();
+  renderFixedExpenses();
 });
 
 // ---------- Export / Import ----------
