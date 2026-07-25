@@ -1,0 +1,1975 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>MealPilot</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+  :root{
+    --board: #20302A;
+    --board-dark: #192622;
+    --chalk: #F1EDE4;
+    --chalk-dim: #C9C2B2;
+    --mustard: #E3A335;
+    --coral: #D97862;
+    --sage: #7A9285;
+    --sky: #7FA3C0;
+    --clay: #B79A73;
+    --lilac: #A392C4;
+    --card: #29392F;
+    --card-line: #3A4C41;
+    --paper: #F1EDE4;
+    --paper-line: #D8D2C2;
+  }
+
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background: var(--board);
+    background-image:
+      radial-gradient(ellipse at top left, rgba(255,255,255,0.03), transparent 60%),
+      radial-gradient(ellipse at bottom right, rgba(255,255,255,0.02), transparent 60%);
+    color: var(--chalk);
+    font-family: 'Inter', sans-serif;
+    min-height:100vh;
+    padding: 28px 20px 60px;
+  }
+
+  .wrap{ max-width: 980px; margin: 0 auto; }
+
+  header{ margin-bottom: 28px; }
+  .brand{
+    font-family:'Caveat', cursive;
+    font-weight:700;
+    font-size: 52px;
+    color: var(--chalk);
+    letter-spacing: 0.5px;
+    line-height:1;
+    display:flex;
+    align-items:baseline;
+    gap:10px;
+  }
+  .brand .dot{ color: var(--mustard); }
+  .tagline{ color: var(--sage); font-size: 13.5px; margin-top:4px; letter-spacing:0.02em; }
+
+  nav{
+    display:flex;
+    gap:6px;
+    margin-top:22px;
+    border-bottom: 1px solid var(--card-line);
+    flex-wrap: wrap;
+  }
+  nav button{
+    background:none;
+    border:none;
+    color: var(--chalk-dim);
+    font-family:'Inter';
+    font-size: 14.5px;
+    font-weight:600;
+    padding: 10px 16px;
+    cursor:pointer;
+    border-bottom: 2px solid transparent;
+    transition: color .15s, border-color .15s;
+  }
+  nav button:hover{ color: var(--chalk); }
+  nav button.active{ color: var(--mustard); border-bottom-color: var(--mustard); }
+
+  section.view{ display:none; padding-top: 26px; }
+  section.view.active{ display:block; }
+
+  .row{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+  .spacer{ flex:1; }
+
+  button.btn{
+    font-family:'Inter';
+    font-weight:600;
+    font-size:13.5px;
+    border-radius: 7px;
+    border: 1px solid transparent;
+    padding: 9px 16px;
+    cursor:pointer;
+    transition: transform .1s, opacity .15s;
+  }
+  button.btn:active{ transform: scale(0.97); }
+  .btn-primary{ background: var(--mustard); color: #201700; }
+  .btn-primary:hover{ opacity:0.9; }
+  .btn-ghost{ background: transparent; color: var(--chalk); border-color: var(--card-line); }
+  .btn-ghost:hover{ border-color: var(--sage); }
+  .modal .btn-ghost{ color: #3A4A3E; border-color: var(--paper-line); }
+  .modal .btn-ghost:hover{ background: rgba(58,74,62,0.06); border-color: #8a9184; }
+  .btn-danger{ background: transparent; color: var(--coral); border-color: rgba(217,120,98,0.4); }
+  .btn-danger:hover{ background: rgba(217,120,98,0.1); }
+  button.btn:disabled{ opacity:0.4; cursor:not-allowed; }
+
+  /* ---------- Recipes ---------- */
+  .recipe-grid{
+    display:grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px,1fr));
+    gap:14px;
+    margin-top:18px;
+  }
+  .recipe-card{
+    background: var(--card);
+    border: 1px solid var(--card-line);
+    border-radius: 10px;
+    padding: 16px;
+    position:relative;
+  }
+  .recipe-card .tape{
+    position:absolute; top:-8px; left:20px;
+    width:44px; height:16px;
+    background: rgba(227,163,53,0.35);
+    border:1px solid rgba(227,163,53,0.5);
+    transform: rotate(-3deg);
+    border-radius:2px;
+  }
+  .recipe-name{ font-weight:700; font-size:16px; margin-bottom:2px; }
+  .recipe-meta{ font-family:'IBM Plex Mono'; font-size:11.5px; color: var(--sage); text-transform:uppercase; letter-spacing:0.04em; }
+  .recipe-tags{ margin-top:10px; display:flex; gap:6px; flex-wrap:wrap; }
+  .tag{ font-size:11px; padding:3px 8px; border-radius:20px; background: rgba(122,146,133,0.18); color: var(--sage); font-family:'IBM Plex Mono'; }
+  .tag.batch{ background: rgba(227,163,53,0.18); color: var(--mustard); }
+  .recipe-actions{ margin-top:12px; display:flex; gap:8px; }
+  .recipe-actions button{ font-size:11.5px; padding:5px 10px; }
+  .empty-state{ color: var(--sage); font-size:14px; padding: 30px 0; text-align:center; border: 1px dashed var(--card-line); border-radius:10px; margin-top: 18px;}
+
+  /* ---------- Modal / form ---------- */
+  .modal-backdrop{
+    display:none; position:fixed; inset:0; background: rgba(10,15,12,0.6);
+    align-items:center; justify-content:center; z-index:50; padding:20px;
+  }
+  .modal-backdrop.active{ display:flex; }
+  .modal{
+    background: var(--paper); color:#22281f; border-radius:12px;
+    max-width: 520px; width:100%; max-height:88vh; overflow-y:auto;
+    padding: 26px;
+  }
+  .modal h3{ margin:0 0 16px; font-family:'Caveat'; font-size:28px; color:#2b3a2f; }
+  .field{ margin-bottom:14px; }
+  .field label{ display:block; font-size:12px; font-weight:600; color:#5a6456; margin-bottom:5px; text-transform:uppercase; letter-spacing:0.03em; }
+  .field input[type=text], .field input[type=number], .field select, .field textarea{
+    width:100%; padding:9px 10px; border-radius:6px; border:1px solid var(--paper-line);
+    font-family:'Inter'; font-size:14px; background:#fff;
+  }
+  .field-row{ display:flex; gap:10px; }
+  .field-row .field{ flex:1; }
+  .checkline{ display:flex; align-items:center; gap:8px; font-size:13.5px; margin-bottom:14px; }
+  .ing-row{ display:flex; gap:6px; margin-bottom:6px; align-items:center; }
+  .ing-row input{ padding:7px 8px; border-radius:5px; border:1px solid var(--paper-line); font-size:13px; }
+  .ing-row .ing-name{ flex:2; }
+  .ing-row .ing-qty{ flex:0.7; }
+  .ing-row .ing-unit{ flex:0.8; }
+  .ing-row .ing-cat{ flex:1; }
+  .ing-row button{ background:none; border:none; color:#b5503f; cursor:pointer; font-size:16px; padding:0 4px; }
+  .modal-footer{ display:flex; justify-content:flex-end; gap:10px; margin-top:18px; }
+
+  /* ---------- Week board ---------- */
+  .board{
+    display:grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 10px;
+    margin-top: 20px;
+  }
+  @media (max-width: 860px){ .board{ grid-template-columns: repeat(2,1fr); } }
+  .day-col{
+    background: var(--board-dark);
+    border: 1px solid var(--card-line);
+    border-radius: 10px;
+    padding: 12px 10px;
+    min-height: 220px;
+  }
+  .day-label{
+    font-family:'Caveat'; font-weight:700; font-size:22px; color: var(--mustard);
+    text-align:center; margin-bottom:10px; border-bottom: 1px dashed var(--card-line); padding-bottom:6px;
+  }
+  .day-label small{ display:block; font-family:'IBM Plex Mono'; font-size:10px; color:var(--sage); font-weight:400; margin-top:2px;}
+  .meal-slot{
+    background: var(--card);
+    border:1px solid var(--card-line);
+    border-radius: 7px;
+    padding: 8px 9px;
+    margin-bottom: 8px;
+    cursor:pointer;
+  }
+  .meal-slot:hover{ border-color: var(--sage); }
+  .meal-slot .mtype{ font-family:'IBM Plex Mono'; font-size:9.5px; color:var(--sage); text-transform:uppercase; letter-spacing:0.05em; }
+  .meal-slot .mname{ font-size:13px; font-weight:600; margin-top:2px; line-height:1.25; }
+  .meal-slot.empty .mname{ color: var(--chalk-dim); font-weight:400; font-style:italic; }
+
+  /* ---------- Grocery / prep ---------- */
+  .category-block{ margin-bottom:22px; }
+  .category-title{ font-family:'IBM Plex Mono'; font-size:12px; color:var(--mustard); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:8px; padding-bottom:6px; border-bottom:1px solid var(--card-line); }
+  .grocery-item, .prep-item{
+    display:flex; align-items:center; gap:10px; padding:8px 4px;
+    border-bottom: 1px dashed rgba(255,255,255,0.06);
+    font-size:14px;
+  }
+  .grocery-item.checked .g-name, .prep-item.checked .p-name{ text-decoration: line-through; color: var(--sage); }
+  .g-qty{ font-family:'IBM Plex Mono'; font-size:12.5px; color: var(--sage); min-width:80px; }
+  input[type=checkbox]{
+    width:17px; height:17px; accent-color: var(--mustard); cursor:pointer; flex-shrink:0;
+  }
+  .receipt-note{ color: var(--sage); font-size:13px; margin-top: -4px; margin-bottom:18px; }
+
+  /* ---------- Spending ---------- */
+  .spend-summary{
+    display:grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px,1fr));
+    gap: 12px;
+    margin-top: 18px;
+  }
+  .spend-card{
+    background: var(--card);
+    border: 1px solid var(--card-line);
+    border-radius: 10px;
+    padding: 14px 16px;
+  }
+  .spend-card.total{ border-color: var(--mustard); }
+  .spend-card .sc-label{ font-family:'IBM Plex Mono'; font-size:10.5px; color:var(--sage); text-transform:uppercase; letter-spacing:0.05em; }
+  .spend-card .sc-amount{ font-family:'IBM Plex Mono'; font-size:24px; font-weight:500; margin-top:6px; color: var(--chalk); }
+  .spend-card.total .sc-amount{ color: var(--mustard); }
+
+  .donut-card{
+    display:flex; align-items:center; gap:28px; flex-wrap:wrap;
+    background: var(--card); border:1px solid var(--card-line); border-radius:10px;
+    padding: 18px 20px; margin-top: 16px;
+  }
+  .donut-wrap{ flex-shrink:0; }
+  .donut-chart{
+    width:140px; height:140px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    background: conic-gradient(var(--card-line) 0deg 360deg);
+  }
+  .donut-hole{
+    width:88px; height:88px; border-radius:50%; background: var(--card);
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+  }
+  .donut-total-label{ font-family:'IBM Plex Mono'; font-size:9px; color:var(--sage); letter-spacing:0.06em; }
+  .donut-total-amount{ font-family:'IBM Plex Mono'; font-size:15px; font-weight:600; color:var(--chalk); margin-top:3px; text-align:center; }
+  .donut-legend{ flex:1; min-width:180px; display:flex; flex-direction:column; gap:8px; }
+  .donut-legend-row{ display:flex; align-items:center; gap:9px; font-size:13px; }
+  .donut-swatch{ width:11px; height:11px; border-radius:3px; flex-shrink:0; }
+  .donut-legend-name{ flex:1; color: var(--chalk-dim); }
+  .donut-legend-pct{ font-family:'IBM Plex Mono'; font-size:11.5px; color: var(--sage); min-width:38px; text-align:right; }
+  .donut-legend-amt{ font-family:'IBM Plex Mono'; font-size:12.5px; color: var(--chalk); min-width:80px; text-align:right; }
+
+  .spend-calendar{
+    display:grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 5px;
+    margin-top: 18px;
+  }
+  .cal-weekday{
+    font-family:'IBM Plex Mono'; font-size:10px; color:var(--sage); text-align:center;
+    text-transform:uppercase; letter-spacing:0.04em; padding-bottom:4px;
+  }
+  .cal-cell{
+    background: var(--card); border:1px solid var(--card-line); border-radius:7px;
+    padding: 6px 5px; min-height:50px; cursor:pointer; transition: border-color .12s;
+  }
+  .cal-cell:hover{ border-color: var(--sage); }
+  .cal-cell.pad{ visibility:hidden; cursor:default; }
+  .cal-cell.today{ border-color: var(--mustard); }
+  .cal-cell.selected{ border-color: var(--coral); background: rgba(217,120,98,0.1); }
+  .cal-day-num{ font-family:'IBM Plex Mono'; font-size:11px; color: var(--chalk-dim); }
+  .cal-amount{ font-family:'IBM Plex Mono'; font-size:11px; font-weight:600; color: var(--mustard); margin-top:5px; line-height:1.3; word-break:break-word; }
+
+  .range-filter{
+    display:flex; gap:8px; align-items:flex-end; flex-wrap:wrap;
+    margin-top: 14px; padding: 10px 12px;
+    border: 1px dashed var(--card-line); border-radius: 8px;
+  }
+  .range-filter .field{ margin-bottom:0; }
+  .range-filter label{ display:block; font-size:11px; font-weight:600; color:var(--sage); margin-bottom:5px; text-transform:uppercase; letter-spacing:0.03em; }
+  .range-filter input{
+    padding:8px 9px; border-radius:6px; border:1px solid var(--card-line);
+    background: var(--card); color: var(--chalk); font-family:'Inter'; font-size:13.5px; color-scheme: dark;
+  }
+
+  .fixed-cat-tabs{
+    display:flex; gap:6px; flex-wrap:wrap; margin-bottom:14px;
+  }
+  .fixed-cat-tab{
+    background: var(--board-dark); border:1px solid var(--card-line); color: var(--chalk-dim);
+    font-family:'Inter'; font-size:12px; font-weight:600; padding:6px 12px; border-radius:20px; cursor:pointer;
+    transition: all .12s;
+  }
+  .fixed-cat-tab:hover{ border-color: var(--sage); color: var(--chalk); }
+  .fixed-cat-tab.active{ background: var(--mustard); color:#201700; border-color: var(--mustard); }
+
+  .fixed-item{
+    display:flex; align-items:center; gap:10px; padding:9px 4px;
+    border-bottom: 1px dashed rgba(255,255,255,0.06);
+    font-size:14px;
+  }
+  .fixed-item.checked .fi-name{ text-decoration: line-through; color: var(--sage); }
+  .fi-name{ flex:1; }
+  .fi-expected{ font-family:'IBM Plex Mono'; font-size:11.5px; color: var(--sage); }
+  .fixed-item button{ background:none; border:none; color:var(--coral); cursor:pointer; font-size:16px; opacity:0.6; }
+  .fixed-item button:hover{ opacity:1; }
+
+  .scan-row{
+    display:flex; gap:6px; align-items:center; flex-wrap:wrap;
+    padding: 9px 4px; border-bottom: 1px dashed rgba(255,255,255,0.06);
+  }
+  .scan-row input, .scan-row select{
+    padding:7px 8px; border-radius:6px; border:1px solid var(--card-line);
+    background: var(--board-dark); color: var(--chalk); font-family:'Inter'; font-size:13px;
+  }
+  .scan-row .scan-date{ width:130px; }
+  .scan-row .scan-note{ flex:1; min-width:120px; }
+  .scan-row .scan-amount{ width:100px; }
+  .scan-row .scan-cat{ width:120px; }
+  .scan-row button{ background:none; border:none; color:var(--coral); cursor:pointer; font-size:16px; opacity:0.6; }
+  .scan-row button:hover{ opacity:1; }
+  .scan-actions{ display:flex; gap:8px; margin-top:12px; }
+
+  .api-key-row{
+    display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:6px;
+  }
+  .api-key-row input{
+    flex:1; min-width:180px; padding:8px 9px; border-radius:6px; border:1px solid var(--card-line);
+    background: var(--board-dark); color: var(--chalk); font-family:'IBM Plex Mono'; font-size:13px;
+  }
+
+  .spend-form{
+    display:flex; gap:8px; flex-wrap:wrap; align-items:flex-end;
+    background: var(--board-dark); border:1px solid var(--card-line); border-radius:10px;
+    padding: 14px; margin-top: 20px;
+  }
+  .spend-form .field{ margin-bottom:0; }
+  .spend-form label{ display:block; font-size:11px; font-weight:600; color:var(--sage); margin-bottom:5px; text-transform:uppercase; letter-spacing:0.03em; }
+  .spend-form input, .spend-form select{
+    padding:8px 9px; border-radius:6px; border:1px solid var(--card-line);
+    background: var(--card); color: var(--chalk); font-family:'Inter'; font-size:13.5px;
+  }
+  .spend-form input[type=date]{ color-scheme: dark; }
+  .spend-form input[type=number]{ width:100px; }
+  .spend-form input[type=text]{ width:160px; }
+
+  .spend-list{ margin-top: 22px; }
+  .spend-item{
+    display:flex; align-items:center; gap:12px; padding:10px 4px;
+    border-bottom: 1px dashed rgba(255,255,255,0.06);
+    font-size:14px;
+  }
+  .spend-item .sp-date{ font-family:'IBM Plex Mono'; font-size:11.5px; color:var(--sage); min-width:64px; }
+  .spend-item .sp-cat{ font-size:11px; padding:3px 9px; border-radius:20px; background: rgba(122,146,133,0.18); color: var(--sage); font-family:'IBM Plex Mono'; text-transform:capitalize; min-width:90px; text-align:center; }
+  .spend-item .sp-cat.grocery{ background: rgba(122,146,133,0.22); color: var(--sage); }
+  .spend-item .sp-cat.restaurants{ background: rgba(217,120,98,0.18); color: var(--coral); }
+  .spend-item .sp-cat.coffee{ background: rgba(227,163,53,0.18); color: var(--mustard); }
+  .spend-item .sp-cat.health{ background: rgba(127,163,192,0.2); color: var(--sky); }
+  .spend-item .sp-cat.utility{ background: rgba(163,146,196,0.2); color: var(--lilac); }
+  .spend-item .sp-cat.other{ background: rgba(183,154,115,0.2); color: var(--clay); }
+  .spend-item .sp-note{ flex:1; color: var(--chalk-dim); }
+  .spend-item .sp-amount{ font-family:'IBM Plex Mono'; font-weight:500; min-width:70px; text-align:right; }
+  .spend-item button{ background:none; border:none; color:var(--coral); cursor:pointer; font-size:16px; opacity:0.6; }
+  .spend-item button:hover{ opacity:1; }
+
+  .meal-option{
+    display:flex; align-items:center; gap:10px; padding:9px 4px;
+    border-bottom: 1px solid var(--paper-line);
+  }
+  .meal-option label{ margin:0; text-transform:none; font-weight:500; font-size:14px; color:#22281f; cursor:pointer; }
+  .meal-option .mo-meta{ margin-left:auto; font-family:'IBM Plex Mono'; font-size:11px; color:#8a8f7e; }
+  .no-options{ color:#8a8f7e; font-size:13.5px; padding: 10px 0; }
+
+  /* ---------- Reminders ---------- */
+  .reminder-card{
+    background: var(--card);
+    border: 1px solid var(--card-line);
+    border-radius: 10px;
+    padding: 16px 18px;
+    margin-top: 16px;
+  }
+  .reminder-card-title{ font-weight:700; font-size:15px; margin-bottom:12px; }
+  .water-row{ display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
+  .water-btn{ width:36px; height:36px; padding:0; font-size:18px; font-weight:700; border-radius:50%; }
+  .water-count{ font-family:'IBM Plex Mono'; font-size:16px; color: var(--chalk); min-width:110px; }
+  .reminder-item{
+    display:flex; align-items:center; gap:10px; padding:8px 4px;
+    border-bottom: 1px dashed rgba(255,255,255,0.06);
+    font-size:14px;
+  }
+  .reminder-item.checked .ri-name{ text-decoration: line-through; color: var(--sage); }
+  .ri-name{ flex:1; }
+  .reminder-item button{ background:none; border:none; color:var(--coral); cursor:pointer; font-size:16px; opacity:0.6; }
+  .reminder-item button:hover{ opacity:1; }
+  .reminder-add-row{ display:flex; gap:8px; margin-top:10px; }
+  .reminder-add-row input{
+    flex:1; padding:8px 9px; border-radius:6px; border:1px solid var(--card-line);
+    background: var(--board-dark); color: var(--chalk); font-family:'Inter'; font-size:13.5px;
+  }
+  .reminder-empty{ color: var(--sage); font-size:13px; padding: 6px 4px; font-style:italic; }
+
+  ::-webkit-scrollbar{ width:8px; }
+  ::-webkit-scrollbar-thumb{ background: var(--card-line); border-radius:4px; }
+
+  /* ---------- Mobile ---------- */
+  @media (max-width: 600px){
+    body{ padding: 18px 12px 40px; }
+    .brand{ font-size: 38px; }
+    .tagline{ font-size: 12.5px; }
+    nav{ margin-top:16px; gap:2px; }
+    nav button{ font-size:13px; padding: 8px 10px; }
+    section.view{ padding-top: 18px; }
+
+    .row{ gap:8px; }
+    .row .btn{ flex:1; min-width: 0; text-align:center; }
+    header .row{ flex-direction: column; align-items: stretch !important; gap:12px; }
+    header .row .row{ flex-direction: row; }
+    #btn-export, #btn-import{ flex:1; }
+
+    .recipe-grid{ grid-template-columns: 1fr; gap:10px; }
+
+    .board{ grid-template-columns: 1fr; gap: 10px; }
+    .day-col{ min-height: 0; }
+    .day-label{ font-size:20px; }
+
+    .modal{ padding: 18px; max-height: 92vh; }
+    .modal h3{ font-size:24px; }
+    .field-row{ flex-direction: column; gap:0; }
+    .ing-row{ flex-wrap: wrap; }
+    .ing-row .ing-name{ flex: 1 1 100%; }
+    .ing-row .ing-qty{ flex: 1 1 27%; }
+    .ing-row .ing-unit{ flex: 1 1 27%; }
+    .ing-row .ing-cat{ flex: 1 1 34%; }
+
+    .spend-form{ flex-direction: column; align-items: stretch; }
+    .spend-form .field{ width:100%; }
+    .spend-form input, .spend-form select{ width:100%; }
+    .spend-form input[type=number], .spend-form input[type=text]{ width:100%; }
+    #btn-add-spend{ width:100%; margin-top:4px; }
+
+    .spend-summary{ grid-template-columns: repeat(2, 1fr); }
+
+    .grocery-item, .prep-item, .spend-item{ font-size:13.5px; }
+    .sp-note{ min-width: 0; }
+    .reminder-add-row{ flex-direction: column; }
+    .water-row{ gap:10px; }
+    .water-row .spacer{ flex-basis: 100%; height:0; }
+    .spend-calendar{ gap:3px; }
+    .cal-cell{ min-height:40px; padding:4px 3px; }
+    .cal-day-num{ font-size:10px; }
+    .cal-amount{ font-size:9.5px; margin-top:3px; }
+    .cal-weekday{ font-size:9px; }
+    .range-filter{ flex-direction: column; align-items: stretch; }
+    .range-filter .field{ width:100%; }
+    .range-filter input{ width:100%; }
+    #fixed-expense-card .reminder-add-row{ flex-direction: column; }
+    #fixed-expense-card .reminder-add-row input, #fixed-expense-card .reminder-add-row select{ width:100%; }
+    .scan-row{ flex-direction: column; align-items: stretch; }
+    .scan-row input, .scan-row select{ width:100%; }
+    #scan-card .row{ flex-wrap: wrap; }
+    .donut-card{ flex-direction: column; align-items: stretch; text-align:center; }
+    .donut-wrap{ align-self:center; }
+    .donut-legend{ width:100%; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="row" style="align-items:flex-start;">
+      <div>
+        <div class="brand">MealPilot<span class="dot">.</span></div>
+        <div class="tagline">Your kitchen chalkboard — recipes in, plan and shopping out.</div>
+      </div>
+      <div class="spacer"></div>
+      <div class="row" style="gap:8px;">
+        <button class="btn btn-ghost" id="btn-export" style="font-size:12.5px; padding:8px 12px;">Export data</button>
+        <button class="btn btn-ghost" id="btn-import" style="font-size:12.5px; padding:8px 12px;">Import data</button>
+        <input type="file" id="import-file-input" accept="application/json" style="display:none;">
+      </div>
+    </div>
+  </header>
+
+  <nav>
+    <button class="tab-btn active" data-view="recipes">Recipes</button>
+    <button class="tab-btn" data-view="week">This Week</button>
+    <button class="tab-btn" data-view="grocery">Grocery List</button>
+    <button class="tab-btn" data-view="prep">Prep Checklist</button>
+    <button class="tab-btn" data-view="spending">Spending</button>
+    <button class="tab-btn" data-view="fixed">Fixed Expenses</button>
+    <button class="tab-btn" data-view="reminders">Reminders</button>
+  </nav>
+
+  <!-- RECIPES -->
+  <section class="view active" id="view-recipes">
+    <div class="row">
+      <div style="color:var(--sage); font-size:13.5px;" id="recipe-count">Loading recipes…</div>
+      <div class="spacer"></div>
+      <button class="btn btn-primary" id="btn-add-recipe">+ Add recipe</button>
+    </div>
+    <div class="recipe-grid" id="recipe-grid"></div>
+    <div class="empty-state" id="recipe-empty" style="display:none;">No recipes yet — add a few quick favorites to get started.</div>
+  </section>
+
+  <!-- WEEK -->
+  <section class="view" id="view-week">
+    <div class="row">
+      <button class="btn btn-ghost" id="btn-prev-week" title="Previous week">‹ Prev</button>
+      <button class="btn btn-ghost" id="btn-today-week" title="Jump to this week">Today</button>
+      <button class="btn btn-ghost" id="btn-next-week" title="Next week">Next ›</button>
+      <div style="color:var(--sage); font-size:13.5px;" id="week-label"></div>
+      <div class="spacer"></div>
+      <button class="btn btn-ghost" id="btn-clear-week">Clear week</button>
+      <button class="btn btn-primary" id="btn-assign-week">Auto-assign week</button>
+    </div>
+    <div class="board" id="board"></div>
+  </section>
+
+  <!-- GROCERY -->
+  <section class="view" id="view-grocery">
+    <div class="row">
+      <div style="color:var(--sage); font-size:13.5px;">Consolidated from this week's plan</div>
+      <div class="spacer"></div>
+      <button class="btn btn-primary" id="btn-gen-grocery">Generate grocery list</button>
+    </div>
+    <div class="receipt-note">Tick items off as you shop — checked state is saved.</div>
+    <div id="grocery-list"></div>
+    <div class="empty-state" id="grocery-empty" style="display:none;">No list yet — assign your week, then generate the list.</div>
+  </section>
+
+  <!-- PREP -->
+  <section class="view" id="view-prep">
+    <div class="row">
+      <div style="color:var(--sage); font-size:13.5px;">Batch-cookable meals from this week</div>
+      <div class="spacer"></div>
+      <button class="btn btn-primary" id="btn-gen-prep">Generate prep checklist</button>
+    </div>
+    <div id="prep-list"></div>
+    <div class="empty-state" id="prep-empty" style="display:none;">No batchable meals planned this week yet.</div>
+  </section>
+
+  <!-- SPENDING -->
+  <section class="view" id="view-spending">
+    <div class="row">
+      <button class="btn btn-ghost" id="btn-prev-month" title="Previous month">‹ Prev</button>
+      <button class="btn btn-ghost" id="btn-today-month" title="Jump to this month">Today</button>
+      <button class="btn btn-ghost" id="btn-next-month" title="Next month">Next ›</button>
+      <div style="color:var(--sage); font-size:13.5px;" id="spend-month-label"></div>
+    </div>
+    <div class="spend-summary" id="spend-summary"></div>
+
+    <div class="donut-card" id="donut-card">
+      <div class="donut-wrap">
+        <div class="donut-chart" id="donut-chart">
+          <div class="donut-hole">
+            <div class="donut-total-label">TOTAL</div>
+            <div class="donut-total-amount" id="donut-total-amount">₹0</div>
+          </div>
+        </div>
+      </div>
+      <div class="donut-legend" id="donut-legend"></div>
+    </div>
+
+    <div class="spend-calendar" id="spend-calendar"></div>
+    <div class="row" id="day-filter-row" style="display:none; margin-top:10px;">
+      <div style="color:var(--mustard); font-size:13px;" id="day-filter-label"></div>
+      <button class="btn btn-ghost" id="btn-clear-day-filter" style="font-size:11.5px; padding:5px 10px;">Show whole month</button>
+    </div>
+
+    <div class="range-filter">
+      <div class="field">
+        <label>From</label>
+        <input type="date" id="range-from">
+      </div>
+      <div class="field">
+        <label>To</label>
+        <input type="date" id="range-to">
+      </div>
+      <button class="btn btn-ghost" id="btn-apply-range">Apply range</button>
+      <button class="btn btn-ghost" id="btn-clear-range" style="display:none;">Clear range</button>
+    </div>
+
+    <!-- Scan expenses from a screenshot -->
+    <div class="reminder-card" id="scan-card">
+      <div class="reminder-card-title">📷 Scan expenses from a screenshot</div>
+      <div style="color:var(--sage); font-size:12.5px; margin-bottom:10px;">
+        Upload a screenshot of your purchase history — MealPilot will try to pull out each item and amount using Google's Gemini API. Always review before adding.
+      </div>
+
+      <div class="api-key-row" id="api-key-row">
+        <input type="password" id="gemini-key-input" placeholder="Paste your Gemini API key">
+        <button class="btn btn-ghost" id="btn-save-gemini-key">Save key</button>
+        <span id="gemini-key-status" style="font-size:12px; color:var(--sage);"></span>
+      </div>
+      <div style="color:var(--sage); font-size:11.5px; margin-bottom:14px;">
+        Stored only in this browser (never synced, never exported) — get a free key at
+        <a href="https://aistudio.google.com/apikey" target="_blank" style="color:var(--mustard);">aistudio.google.com/apikey</a>.
+      </div>
+
+      <input type="file" id="scan-file-input" accept="image/*" style="display:none;">
+      <div class="row" style="gap:8px;">
+        <button class="btn btn-ghost" id="btn-choose-scan">Choose screenshot</button>
+        <span id="scan-file-name" style="color:var(--sage); font-size:12.5px;"></span>
+        <div class="spacer"></div>
+        <button class="btn btn-primary" id="btn-extract-scan" disabled>Extract expenses</button>
+      </div>
+      <div id="scan-status" style="color:var(--mustard); font-size:12.5px; margin-top:10px; display:none;"></div>
+      <div id="scan-results"></div>
+    </div>
+
+    <div class="spend-form">
+      <div class="field">
+        <label>Date</label>
+        <input type="date" id="sp-date">
+      </div>
+      <div class="field">
+        <label>Category</label>
+        <select id="sp-category">
+          <option value="grocery">Grocery</option>
+          <option value="restaurants">Restaurants</option>
+          <option value="coffee">Coffee</option>
+          <option value="health">Health & wellness</option>
+          <option value="utility">Utility</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Amount</label>
+        <input type="number" id="sp-amount" placeholder="₹0.00" step="0.01" min="0">
+      </div>
+      <div class="field">
+        <label>Note (optional)</label>
+        <input type="text" id="sp-note" placeholder="e.g. Trader Joe's">
+      </div>
+      <div class="field" style="display:flex; align-items:center; gap:7px; padding-bottom:9px;">
+        <input type="checkbox" id="sp-recurring" style="width:16px; height:16px; accent-color: var(--mustard); cursor:pointer;">
+        <label for="sp-recurring" style="margin:0; text-transform:none; font-weight:500; font-size:13px; cursor:pointer;">Recurring — also add to Fixed Expenses</label>
+      </div>
+      <button class="btn btn-primary" id="btn-add-spend">+ Add expense</button>
+    </div>
+
+    <div class="spend-list" id="spend-list"></div>
+    <div class="empty-state" id="spend-empty" style="display:none;">No expenses logged yet — add your first grocery run, coffee, or takeout above.</div>
+  </section>
+
+  <!-- FIXED EXPENSES -->
+  <section class="view" id="view-fixed">
+    <div class="row">
+      <button class="btn btn-ghost" id="btn-prev-fixed-month" title="Previous month">‹ Prev</button>
+      <button class="btn btn-ghost" id="btn-today-fixed-month" title="Jump to this month">Today</button>
+      <button class="btn btn-ghost" id="btn-next-fixed-month" title="Next month">Next ›</button>
+      <div style="color:var(--sage); font-size:13.5px;" id="fixed-month-label"></div>
+    </div>
+
+    <div class="reminder-card" id="fixed-expense-card">
+      <div class="reminder-card-title" id="fixed-expense-title">📋 Fixed monthly expenses</div>
+
+      <div class="fixed-cat-tabs" id="fixed-cat-tabs">
+        <button class="fixed-cat-tab active" data-group="all">All</button>
+        <button class="fixed-cat-tab" data-group="food">Food</button>
+        <button class="fixed-cat-tab" data-group="utility">Utility</button>
+        <button class="fixed-cat-tab" data-group="health">Health & Wellness</button>
+        <button class="fixed-cat-tab" data-group="other">Other</button>
+      </div>
+
+      <div id="fixed-expense-list"></div>
+      <div class="reminder-add-row" style="flex-wrap:wrap;">
+        <input type="text" id="new-fixed-name" placeholder="e.g. Rent, Electricity, Gym membership" style="flex:2; min-width:160px;">
+        <input type="number" id="new-fixed-amount" placeholder="Expected ₹ (optional)" step="0.01" min="0" style="flex:1; min-width:120px;">
+        <select id="new-fixed-category" style="flex:1; min-width:110px; padding:8px 9px; border-radius:6px; border:1px solid var(--card-line); background: var(--board-dark); color: var(--chalk); font-family:'Inter'; font-size:13.5px;">
+          <option value="grocery">Grocery</option>
+          <option value="restaurants">Restaurants</option>
+          <option value="coffee">Coffee</option>
+          <option value="health">Health & wellness</option>
+          <option value="utility">Utility</option>
+          <option value="other" selected>Other</option>
+        </select>
+        <button class="btn btn-ghost" id="btn-add-fixed">+ Add</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- REMINDERS -->
+  <section class="view" id="view-reminders">
+    <div style="color:var(--sage); font-size:13.5px; margin-bottom:4px;" id="reminders-date-label"></div>
+
+    <!-- Water -->
+    <div class="reminder-card">
+      <div class="reminder-card-title">💧 Water intake</div>
+      <div class="water-row">
+        <button class="btn btn-ghost water-btn" id="water-minus">−</button>
+        <div class="water-count"><span id="water-count-num">0</span> / <span id="water-goal-num">8</span> glasses</div>
+        <button class="btn btn-ghost water-btn" id="water-plus">+</button>
+        <div class="spacer"></div>
+        <button class="btn btn-ghost" id="water-edit-goal" style="font-size:12px; padding:6px 10px;">Set goal</button>
+      </div>
+    </div>
+
+    <!-- Supplements -->
+    <div class="reminder-card">
+      <div class="reminder-card-title">💊 Supplements — today</div>
+      <div id="supplement-list"></div>
+      <div class="reminder-add-row">
+        <input type="text" id="new-supplement-name" placeholder="e.g. Vitamin D, Magnesium, B12">
+        <button class="btn btn-ghost" id="btn-add-supplement">+ Add</button>
+      </div>
+    </div>
+
+    <!-- Overnight soak -->
+    <div class="reminder-card">
+      <div class="reminder-card-title">🌙 Overnight soak</div>
+      <div style="color:var(--sage); font-size:12.5px; margin-bottom:10px;">Add tonight, check off once it's soaking.</div>
+      <div id="soak-list"></div>
+      <div class="reminder-add-row">
+        <input type="text" id="new-soak-note" placeholder="e.g. Soak chickpeas for tomorrow's dinner">
+        <button class="btn btn-ghost" id="btn-add-soak">+ Add</button>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- MODAL -->
+<div class="modal-backdrop" id="modal-backdrop">
+  <div class="modal">
+    <h3 id="modal-title">Add a recipe</h3>
+    <div class="field">
+      <label>Name</label>
+      <input type="text" id="f-name" placeholder="e.g. Sheet-pan chicken fajitas">
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>Meal type</label>
+        <select id="f-mealtype">
+          <option value="breakfast">Breakfast</option>
+          <option value="lunch">Lunch</option>
+          <option value="dinner">Dinner</option>
+          <option value="snack">Snack</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Prep time (min)</label>
+        <input type="number" id="f-prep" placeholder="15">
+      </div>
+    </div>
+    <div class="field">
+      <label>Tags (comma separated)</label>
+      <input type="text" id="f-tags" placeholder="vegetarian, high-protein, quick">
+    </div>
+    <div class="checkline">
+      <input type="checkbox" id="f-batchable">
+      <label for="f-batchable" style="margin:0; text-transform:none; font-weight:500;">Good for weekend batch-prep</label>
+    </div>
+    <div class="field">
+      <label>Ingredients</label>
+      <div id="ing-rows"></div>
+      <button class="btn btn-ghost" id="btn-add-ing" style="margin-top:4px; font-size:12px; padding:6px 10px;">+ Add ingredient</button>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" id="btn-cancel">Cancel</button>
+      <button class="btn btn-primary" id="btn-save-recipe">Save recipe</button>
+    </div>
+  </div>
+</div>
+
+<!-- MEAL PICKER MODAL -->
+<div class="modal-backdrop" id="meal-modal-backdrop">
+  <div class="modal">
+    <h3 id="meal-modal-title">Build your meal</h3>
+    <div style="color:#5a6456; font-size:13px; margin-bottom:14px;">A meal can be more than one dish — check everything that's part of it.</div>
+    <div id="meal-options"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" id="meal-modal-cancel">Cancel</button>
+      <button class="btn btn-primary" id="meal-modal-save">Save</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const CATEGORIES = ['produce','protein','dairy','pantry','frozen','other'];
+const DAYS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+const MEALS = ['breakfast','lunch','dinner'];
+
+let state = {
+  recipes: [],
+  weekStart: null,
+  weekPlans: {},       // { "2026-07-20": { "Mon-breakfast": [recipeId,...] }, ... } keyed by Monday date (YYYY-MM-DD)
+  grocery: [],          // [{category, name, qty, unit, checked}]
+  prep: [],              // [{recipeId, name, task, done}]
+  expenses: [],           // [{id, date, category, amount, note}]
+  supplements: [],         // [{id, name}] templates
+  supplementChecks: {},     // { "YYYY-MM-DD": [supplementId, ...] }
+  waterGoal: 8,
+  waterLog: {},             // { "YYYY-MM-DD": count }
+  soakItems: [],              // [{id, note, done}]
+  fixedExpenseTemplates: [],   // [{id, name, expectedAmount, category}]
+  fixedChecks: {}               // { "YYYY-MM": { templateId: expenseId } }
+};
+
+function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+
+function mondayOf(d){
+  const date = new Date(d);
+  const day = date.getDay();
+  const diff = (day === 0 ? -6 : 1) - day;
+  date.setDate(date.getDate() + diff);
+  date.setHours(0,0,0,0);
+  return date;
+}
+
+function weekKeyOf(d){
+  return mondayOf(d).toISOString().slice(0,10); // YYYY-MM-DD
+}
+
+function currentWeekPlan(){
+  const key = weekKeyOf(new Date(state.weekStart));
+  if(!state.weekPlans[key]) state.weekPlans[key] = {};
+  return state.weekPlans[key];
+}
+
+function todayKey(){
+  const d = new Date();
+  d.setHours(0,0,0,0);
+  return d.toISOString().slice(0,10);
+}
+
+function fmtDate(d){
+  return d.toLocaleDateString(undefined, {month:'short', day:'numeric'});
+}
+
+// Storage adapter: use Claude's artifact storage when running inside
+// Claude.ai, otherwise fall back to the browser's own localStorage so the
+// downloaded file also persists data when opened directly.
+const STORAGE_KEY = 'mealpilot-data';
+const usingCloudStorage = (typeof window.storage !== 'undefined' && window.storage !== null);
+
+const storageAdapter = usingCloudStorage ? window.storage : {
+  async get(key){
+    const v = localStorage.getItem(key);
+    if(v === null){ throw new Error('not found'); }
+    return { key, value: v };
+  },
+  async set(key, value){
+    localStorage.setItem(key, value);
+    return { key, value };
+  }
+};
+
+async function loadState(){
+  try{
+    const res = await storageAdapter.get(STORAGE_KEY);
+    if(res && res.value){
+      const parsed = JSON.parse(res.value);
+      state = Object.assign(state, parsed);
+    }
+  }catch(e){
+    console.log('No existing data yet, starting fresh.');
+  }
+  if(!state.weekStart){
+    state.weekStart = mondayOf(new Date()).toISOString();
+  }
+  if(!state.weekPlans) state.weekPlans = {};
+  if(!state.supplements) state.supplements = [];
+  if(!state.supplementChecks) state.supplementChecks = {};
+  if(state.waterGoal === undefined || state.waterGoal === null) state.waterGoal = 8;
+  if(!state.waterLog) state.waterLog = {};
+  if(!state.soakItems) state.soakItems = [];
+  if(!state.fixedExpenseTemplates) state.fixedExpenseTemplates = [];
+  if(!state.fixedChecks) state.fixedChecks = {};
+  // Migrate legacy flat weekPlan (single-week only, pre-navigation) if present
+  if(state.weekPlan && Object.keys(state.weekPlan).length){
+    const legacyKey = weekKeyOf(new Date(state.weekStart));
+    state.weekPlans[legacyKey] = state.weekPlans[legacyKey] || state.weekPlan;
+    delete state.weekPlan;
+  }
+  render();
+}
+
+let saveTimer = null;
+function saveState(){
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(async () => {
+    try{
+      await storageAdapter.set(STORAGE_KEY, JSON.stringify(state));
+    }catch(e){
+      console.error('Save failed', e);
+    }
+  }, 150);
+}
+
+// ---------- Tabs ----------
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('view-'+btn.dataset.view).classList.add('active');
+  });
+});
+
+// ---------- Recipes render ----------
+function render(){
+  renderRecipes();
+  renderWeek();
+  renderGrocery();
+  renderPrep();
+  renderSpending();
+  renderFixedExpenses();
+  renderReminders();
+}
+
+function renderRecipes(){
+  const grid = document.getElementById('recipe-grid');
+  const empty = document.getElementById('recipe-empty');
+  const count = document.getElementById('recipe-count');
+  grid.innerHTML = '';
+  count.textContent = state.recipes.length + (state.recipes.length===1 ? ' recipe in your pool' : ' recipes in your pool');
+  if(state.recipes.length === 0){
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+  state.recipes.forEach(r => {
+    const card = document.createElement('div');
+    card.className = 'recipe-card';
+    const tags = (r.tags||[]).map(t=>`<span class="tag">${escapeHtml(t)}</span>`).join('');
+    const batchTag = r.batchable ? `<span class="tag batch">batch-friendly</span>` : '';
+    card.innerHTML = `
+      <div class="tape"></div>
+      <div class="recipe-name">${escapeHtml(r.name)}</div>
+      <div class="recipe-meta">${r.mealType} · ${r.prepMinutes || '?'} min</div>
+      <div class="recipe-tags">${tags}${batchTag}</div>
+      <div class="recipe-actions">
+        <button class="btn btn-ghost" data-edit="${r.id}">Edit</button>
+        <button class="btn btn-danger" data-del="${r.id}">Delete</button>
+      </div>
+    `;
+    grid.appendChild(card);
+  });
+  grid.querySelectorAll('[data-edit]').forEach(b => b.addEventListener('click', () => openModal(b.dataset.edit)));
+  grid.querySelectorAll('[data-del]').forEach(b => b.addEventListener('click', () => {
+    state.recipes = state.recipes.filter(r => r.id !== b.dataset.del);
+    saveState(); render();
+  }));
+}
+
+function escapeHtml(s){
+  return (s||'').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+
+// ---------- Modal ----------
+const backdrop = document.getElementById('modal-backdrop');
+let editingId = null;
+
+function ingRow(ing){
+  ing = ing || {name:'', qty:'', unit:'', category:'produce'};
+  const row = document.createElement('div');
+  row.className = 'ing-row';
+  row.innerHTML = `
+    <input type="text" class="ing-name" placeholder="ingredient" value="${escapeHtml(ing.name)}">
+    <input type="number" class="ing-qty" placeholder="qty" value="${ing.qty}" step="any">
+    <input type="text" class="ing-unit" placeholder="unit" value="${escapeHtml(ing.unit)}">
+    <select class="ing-cat">${CATEGORIES.map(c=>`<option value="${c}" ${c===ing.category?'selected':''}>${c}</option>`).join('')}</select>
+    <button type="button" title="remove">×</button>
+  `;
+  row.querySelector('button').addEventListener('click', () => row.remove());
+  return row;
+}
+
+function openModal(id){
+  editingId = id || null;
+  const r = id ? state.recipes.find(x=>x.id===id) : null;
+  document.getElementById('modal-title').textContent = r ? 'Edit recipe' : 'Add a recipe';
+  document.getElementById('f-name').value = r ? r.name : '';
+  document.getElementById('f-mealtype').value = r ? r.mealType : 'dinner';
+  document.getElementById('f-prep').value = r ? r.prepMinutes : '';
+  document.getElementById('f-tags').value = r ? (r.tags||[]).join(', ') : '';
+  document.getElementById('f-batchable').checked = r ? !!r.batchable : false;
+  const ingWrap = document.getElementById('ing-rows');
+  ingWrap.innerHTML = '';
+  const ings = r && r.ingredients && r.ingredients.length ? r.ingredients : [null];
+  ings.forEach(i => ingWrap.appendChild(ingRow(i)));
+  backdrop.classList.add('active');
+}
+
+document.getElementById('btn-add-recipe').addEventListener('click', () => openModal(null));
+document.getElementById('btn-cancel').addEventListener('click', () => backdrop.classList.remove('active'));
+document.getElementById('btn-add-ing').addEventListener('click', () => {
+  document.getElementById('ing-rows').appendChild(ingRow(null));
+});
+
+document.getElementById('btn-save-recipe').addEventListener('click', () => {
+  const name = document.getElementById('f-name').value.trim();
+  if(!name){ alert('Give the recipe a name.'); return; }
+  const ingredients = [...document.querySelectorAll('#ing-rows .ing-row')].map(row => ({
+    name: row.querySelector('.ing-name').value.trim(),
+    qty: parseFloat(row.querySelector('.ing-qty').value) || 0,
+    unit: row.querySelector('.ing-unit').value.trim(),
+    category: row.querySelector('.ing-cat').value
+  })).filter(i => i.name);
+
+  const recipe = {
+    id: editingId || uid(),
+    name,
+    mealType: document.getElementById('f-mealtype').value,
+    prepMinutes: parseInt(document.getElementById('f-prep').value) || null,
+    tags: document.getElementById('f-tags').value.split(',').map(t=>t.trim()).filter(Boolean),
+    batchable: document.getElementById('f-batchable').checked,
+    ingredients,
+    lastUsed: editingId ? (state.recipes.find(r=>r.id===editingId)||{}).lastUsed || null : null
+  };
+
+  if(editingId){
+    state.recipes = state.recipes.map(r => r.id === editingId ? recipe : r);
+  } else {
+    state.recipes.push(recipe);
+  }
+  saveState();
+  backdrop.classList.remove('active');
+  render();
+});
+
+// ---------- Week board ----------
+function renderWeek(){
+  const board = document.getElementById('board');
+  board.innerHTML = '';
+  const start = new Date(state.weekStart);
+  const plan = currentWeekPlan();
+  const todayKey = weekKeyOf(new Date());
+  const thisWeekKey = weekKeyOf(start);
+  const label = thisWeekKey === todayKey ? 'This week · ' : '';
+  document.getElementById('week-label').textContent =
+    label + 'Week of ' + fmtDate(start) + ' – ' + fmtDate(new Date(start.getTime() + 6*86400000));
+
+  DAYS.forEach((day, idx) => {
+    const d = new Date(start.getTime() + idx*86400000);
+    const col = document.createElement('div');
+    col.className = 'day-col';
+    col.innerHTML = `<div class="day-label">${day}<small>${fmtDate(d)}</small></div>`;
+    MEALS.forEach(meal => {
+      const key = day + '-' + meal;
+      const ids = plan[key] || [];
+      const recipes = ids.map(id => state.recipes.find(r=>r.id===id)).filter(Boolean);
+      const slot = document.createElement('div');
+      slot.className = 'meal-slot' + (recipes.length ? '' : ' empty');
+      const mlabel = recipes.length ? recipes.map(r=>escapeHtml(r.name)).join(' + ') : 'tap to set';
+      slot.innerHTML = `<div class="mtype">${meal}</div><div class="mname">${mlabel}</div>`;
+      slot.addEventListener('click', () => pickMeal(key, meal));
+      col.appendChild(slot);
+    });
+    board.appendChild(col);
+  });
+}
+
+document.getElementById('btn-prev-week').addEventListener('click', () => {
+  state.weekStart = new Date(new Date(state.weekStart).getTime() - 7*86400000).toISOString();
+  saveState(); renderWeek();
+});
+document.getElementById('btn-next-week').addEventListener('click', () => {
+  state.weekStart = new Date(new Date(state.weekStart).getTime() + 7*86400000).toISOString();
+  saveState(); renderWeek();
+});
+document.getElementById('btn-today-week').addEventListener('click', () => {
+  state.weekStart = mondayOf(new Date()).toISOString();
+  saveState(); renderWeek();
+});
+
+const mealModal = document.getElementById('meal-modal-backdrop');
+let currentMealKey = null;
+
+function pickMeal(key, mealType){
+  const options = state.recipes.filter(r => r.mealType === mealType);
+  if(options.length === 0){ alert(`No ${mealType} recipes in your pool yet — add one first.`); return; }
+  currentMealKey = key;
+  document.getElementById('meal-modal-title').textContent = `Build your ${mealType}`;
+  const plan = currentWeekPlan();
+  const current = new Set(plan[key] || []);
+  const wrap = document.getElementById('meal-options');
+  wrap.innerHTML = '';
+  options.forEach(r => {
+    const row = document.createElement('div');
+    row.className = 'meal-option';
+    const cid = 'mo-' + r.id;
+    row.innerHTML = `
+      <input type="checkbox" id="${cid}" value="${r.id}" ${current.has(r.id) ? 'checked' : ''}>
+      <label for="${cid}">${escapeHtml(r.name)}</label>
+      <span class="mo-meta">${r.prepMinutes ? r.prepMinutes+' min' : ''}</span>
+    `;
+    wrap.appendChild(row);
+  });
+  mealModal.classList.add('active');
+}
+
+document.getElementById('meal-modal-cancel').addEventListener('click', () => mealModal.classList.remove('active'));
+
+document.getElementById('meal-modal-save').addEventListener('click', () => {
+  const checked = [...document.querySelectorAll('#meal-options input:checked')].map(cb => cb.value);
+  const plan = currentWeekPlan();
+  if(checked.length === 0){
+    delete plan[currentMealKey];
+  } else {
+    plan[currentMealKey] = checked;
+    checked.forEach(id => {
+      const r = state.recipes.find(x=>x.id===id);
+      if(r) r.lastUsed = new Date().toISOString();
+    });
+  }
+  saveState();
+  mealModal.classList.remove('active');
+  renderWeek();
+});
+
+document.getElementById('btn-clear-week').addEventListener('click', () => {
+  if(!confirm('Clear this week\'s plan?')) return;
+  const key = weekKeyOf(new Date(state.weekStart));
+  state.weekPlans[key] = {};
+  saveState(); renderWeek();
+});
+
+document.getElementById('btn-assign-week').addEventListener('click', () => {
+  if(state.recipes.length === 0){ alert('Add some recipes first.'); return; }
+  const plan = currentWeekPlan();
+  DAYS.forEach(day => {
+    MEALS.forEach(meal => {
+      const pool = state.recipes.filter(r => r.mealType === meal);
+      if(pool.length === 0) return;
+      // weight toward recipes not used recently
+      const sorted = [...pool].sort((a,b) => {
+        const at = a.lastUsed ? new Date(a.lastUsed).getTime() : 0;
+        const bt = b.lastUsed ? new Date(b.lastUsed).getTime() : 0;
+        return at - bt;
+      });
+      // pick from the least-recently-used half, randomized, to keep variety
+      const candidates = sorted.slice(0, Math.max(1, Math.ceil(sorted.length/2)));
+      const pick = candidates[Math.floor(Math.random()*candidates.length)];
+      plan[day+'-'+meal] = [pick.id];
+      pick.lastUsed = new Date().toISOString();
+    });
+  });
+  saveState(); renderWeek();
+});
+
+
+// ---------- Grocery ----------
+function renderGrocery(){
+  const wrap = document.getElementById('grocery-list');
+  const empty = document.getElementById('grocery-empty');
+  wrap.innerHTML = '';
+  if(!state.grocery || state.grocery.length === 0){
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+  const byCat = {};
+  state.grocery.forEach(item => {
+    byCat[item.category] = byCat[item.category] || [];
+    byCat[item.category].push(item);
+  });
+  CATEGORIES.forEach(cat => {
+    if(!byCat[cat]) return;
+    const block = document.createElement('div');
+    block.className = 'category-block';
+    block.innerHTML = `<div class="category-title">${cat}</div>`;
+    byCat[cat].forEach(item => {
+      const row = document.createElement('div');
+      row.className = 'grocery-item' + (item.checked ? ' checked' : '');
+      const qtyStr = item.qty ? (Math.round(item.qty*100)/100) + (item.unit ? ' '+item.unit : '') : (item.unit || '');
+      row.innerHTML = `<input type="checkbox" ${item.checked?'checked':''}><span class="g-qty">${qtyStr}</span><span class="g-name">${escapeHtml(item.name)}</span>`;
+      row.querySelector('input').addEventListener('change', e => {
+        item.checked = e.target.checked;
+        row.classList.toggle('checked', item.checked);
+        saveState();
+      });
+      block.appendChild(row);
+    });
+    wrap.appendChild(block);
+  });
+}
+
+document.getElementById('btn-gen-grocery').addEventListener('click', () => {
+  const agg = {}; // key: name|unit|category -> qty
+  const allRecipeIds = Object.values(currentWeekPlan()).flat();
+  allRecipeIds.forEach(recipeId => {
+    const r = state.recipes.find(x=>x.id===recipeId);
+    if(!r) return;
+    (r.ingredients||[]).forEach(ing => {
+      const key = ing.name.toLowerCase() + '|' + ing.unit + '|' + ing.category;
+      if(!agg[key]) agg[key] = {name: ing.name, unit: ing.unit, category: ing.category, qty: 0};
+      agg[key].qty += (ing.qty || 0);
+    });
+  });
+  state.grocery = Object.values(agg).map(i => ({...i, checked:false})).sort((a,b)=>a.name.localeCompare(b.name));
+  saveState(); renderGrocery();
+  document.querySelector('.tab-btn[data-view="grocery"]').click();
+});
+
+// ---------- Prep ----------
+function renderPrep(){
+  const wrap = document.getElementById('prep-list');
+  const empty = document.getElementById('prep-empty');
+  wrap.innerHTML = '';
+  if(!state.prep || state.prep.length === 0){
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+  const block = document.createElement('div');
+  block.className = 'category-block';
+  block.innerHTML = `<div class="category-title">Weekend batch prep</div>`;
+  state.prep.forEach(item => {
+    const row = document.createElement('div');
+    row.className = 'prep-item' + (item.done ? ' checked' : '');
+    row.innerHTML = `<input type="checkbox" ${item.done?'checked':''}><span class="p-name">${escapeHtml(item.task)}</span>`;
+    row.querySelector('input').addEventListener('change', e => {
+      item.done = e.target.checked;
+      row.classList.toggle('checked', item.done);
+      saveState();
+    });
+    block.appendChild(row);
+  });
+  wrap.appendChild(block);
+}
+
+document.getElementById('btn-gen-prep').addEventListener('click', () => {
+  const seen = new Set();
+  const tasks = [];
+  const allRecipeIds = Object.values(currentWeekPlan()).flat();
+  allRecipeIds.forEach(recipeId => {
+    const r = state.recipes.find(x=>x.id===recipeId);
+    if(!r || !r.batchable || seen.has(r.id)) return;
+    seen.add(r.id);
+    tasks.push({recipeId: r.id, task: `Batch-cook ${r.name} — portion into containers`, done:false});
+  });
+  state.prep = tasks;
+  saveState(); renderPrep();
+  document.querySelector('.tab-btn[data-view="prep"]').click();
+});
+
+// ---------- Spending ----------
+const SPEND_CATS = ['grocery','restaurants','coffee','health','utility','other'];
+const SPEND_CAT_LABELS = { grocery:'Grocery', restaurants:'Restaurants', coffee:'Coffee', health:'Health & wellness', utility:'Utility', other:'Other' };
+const SPEND_CAT_COLORS = { grocery:'#7A9285', restaurants:'#D97862', coffee:'#E3A335', health:'#7FA3C0', utility:'#A392C4', other:'#B79A73' };
+
+let spendViewMonth = new Date(); // transient, not persisted — always opens on current month
+let selectedSpendDay = null;      // "YYYY-MM-DD" or null
+let activeRange = null;            // {from:"YYYY-MM-DD", to:"YYYY-MM-DD"} or null
+
+function pad2(n){ return String(n).padStart(2,'0'); }
+function monthKeyOf(d){ return d.getFullYear() + '-' + pad2(d.getMonth()+1); }
+function inr(n){ return '₹' + n.toLocaleString('en-IN', {minimumFractionDigits:2, maximumFractionDigits:2}); }
+
+function renderDonutChart(totals, grandTotal){
+  const chart = document.getElementById('donut-chart');
+  const legend = document.getElementById('donut-legend');
+  document.getElementById('donut-total-amount').textContent = inr(grandTotal).replace('.00','');
+
+  if(grandTotal <= 0){
+    chart.style.background = 'conic-gradient(var(--card-line) 0deg 360deg)';
+    legend.innerHTML = '<div class="reminder-empty">No expenses to chart yet.</div>';
+    return;
+  }
+
+  let cursor = 0;
+  const segments = [];
+  SPEND_CATS.forEach(c => {
+    const amt = totals[c];
+    if(amt <= 0) return;
+    const degrees = (amt / grandTotal) * 360;
+    segments.push(`${SPEND_CAT_COLORS[c]} ${cursor}deg ${cursor + degrees}deg`);
+    cursor += degrees;
+  });
+  chart.style.background = `conic-gradient(${segments.join(', ')})`;
+
+  legend.innerHTML = SPEND_CATS.filter(c => totals[c] > 0).map(c => {
+    const pct = ((totals[c] / grandTotal) * 100).toFixed(1);
+    return `
+      <div class="donut-legend-row">
+        <div class="donut-swatch" style="background:${SPEND_CAT_COLORS[c]};"></div>
+        <div class="donut-legend-name">${SPEND_CAT_LABELS[c]}</div>
+        <div class="donut-legend-pct">${pct}%</div>
+        <div class="donut-legend-amt">${inr(totals[c])}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderSpending(){
+  const summary = document.getElementById('spend-summary');
+  const calendar = document.getElementById('spend-calendar');
+  const list = document.getElementById('spend-list');
+  const empty = document.getElementById('spend-empty');
+  const dayFilterRow = document.getElementById('day-filter-row');
+
+  const viewYear = spendViewMonth.getFullYear();
+  const viewMonth = spendViewMonth.getMonth();
+  const mKey = monthKeyOf(spendViewMonth);
+  const todayStr = todayKey();
+
+  document.getElementById('spend-month-label').textContent =
+    spendViewMonth.toLocaleDateString(undefined, {month:'long', year:'numeric'});
+
+  const monthExpenses = (state.expenses||[]).filter(e => e.date && e.date.startsWith(mKey));
+
+  // ---- Summary totals: reflect the active range if set, otherwise the viewed month ----
+  const summarySource = activeRange
+    ? (state.expenses||[]).filter(e => e.date >= activeRange.from && e.date <= activeRange.to)
+    : monthExpenses;
+
+  const totals = {};
+  SPEND_CATS.forEach(c => totals[c] = 0);
+  summarySource.forEach(e => { if(totals[e.category] !== undefined) totals[e.category] += e.amount; });
+  const grandTotal = SPEND_CATS.reduce((sum,c) => sum + totals[c], 0);
+
+  const totalLabel = activeRange ? 'Total in range' : 'Total this month';
+  summary.innerHTML =
+    SPEND_CATS.map(c => `<div class="spend-card"><div class="sc-label">${SPEND_CAT_LABELS[c]}</div><div class="sc-amount">${inr(totals[c])}</div></div>`).join('') +
+    `<div class="spend-card total"><div class="sc-label">${totalLabel}</div><div class="sc-amount">${inr(grandTotal)}</div></div>`;
+
+  renderDonutChart(totals, grandTotal);
+
+  // ---- Calendar grid (always reflects the viewed month) ----
+  const byDay = {};
+  monthExpenses.forEach(e => { byDay[e.date] = (byDay[e.date] || 0) + e.amount; });
+
+  const firstOfMonth = new Date(viewYear, viewMonth, 1);
+  const startOffset = firstOfMonth.getDay(); // 0 = Sunday
+  const daysInMonth = new Date(viewYear, viewMonth+1, 0).getDate();
+
+  calendar.innerHTML = '';
+  ['Su','Mo','Tu','We','Th','Fr','Sa'].forEach(w => {
+    const el = document.createElement('div');
+    el.className = 'cal-weekday';
+    el.textContent = w;
+    calendar.appendChild(el);
+  });
+  for(let i=0; i<startOffset; i++){
+    const pad = document.createElement('div');
+    pad.className = 'cal-cell pad';
+    calendar.appendChild(pad);
+  }
+  for(let day=1; day<=daysInMonth; day++){
+    const dateStr = `${viewYear}-${pad2(viewMonth+1)}-${pad2(day)}`;
+    const cell = document.createElement('div');
+    cell.className = 'cal-cell';
+    if(dateStr === todayStr) cell.classList.add('today');
+    if(dateStr === selectedSpendDay) cell.classList.add('selected');
+    const amt = byDay[dateStr];
+    cell.innerHTML = `<div class="cal-day-num">${day}</div>${amt ? `<div class="cal-amount">₹${amt.toLocaleString('en-IN',{maximumFractionDigits:0})}</div>` : ''}`;
+    cell.addEventListener('click', () => {
+      activeRange = null;
+      document.getElementById('btn-clear-range').style.display = 'none';
+      selectedSpendDay = (selectedSpendDay === dateStr) ? null : dateStr;
+      renderSpending();
+    });
+    calendar.appendChild(cell);
+  }
+
+  // ---- Day filter banner ----
+  if(selectedSpendDay && !activeRange){
+    dayFilterRow.style.display = 'flex';
+    document.getElementById('day-filter-label').textContent =
+      'Showing: ' + new Date(selectedSpendDay + 'T00:00:00').toLocaleDateString(undefined, {weekday:'long', month:'long', day:'numeric'});
+  } else {
+    dayFilterRow.style.display = 'none';
+  }
+
+  // ---- Expense list ----
+  let source, emptyMsg;
+  if(activeRange){
+    source = (state.expenses||[]).filter(e => e.date >= activeRange.from && e.date <= activeRange.to);
+    emptyMsg = 'No expenses logged in this date range.';
+  } else if(selectedSpendDay){
+    source = monthExpenses.filter(e => e.date === selectedSpendDay);
+    emptyMsg = 'No expenses logged on this day.';
+  } else {
+    source = monthExpenses;
+    emptyMsg = 'No expenses logged this month yet.';
+  }
+  const all = [...source].sort((a,b) => new Date(b.date) - new Date(a.date));
+  list.innerHTML = '';
+  if(all.length === 0){
+    empty.style.display = 'block';
+    empty.textContent = emptyMsg;
+  } else {
+    empty.style.display = 'none';
+    all.forEach(e => {
+      const row = document.createElement('div');
+      row.className = 'spend-item';
+      row.innerHTML = `
+        <span class="sp-date">${e.date}</span>
+        <span class="sp-cat ${e.category}">${SPEND_CAT_LABELS[e.category] || e.category}</span>
+        <span class="sp-note">${escapeHtml(e.note || '')}</span>
+        <span class="sp-amount">${inr(e.amount)}</span>
+        <button title="remove" data-del-spend="${e.id}">×</button>
+      `;
+      list.appendChild(row);
+    });
+    list.querySelectorAll('[data-del-spend]').forEach(b => b.addEventListener('click', () => {
+      state.expenses = state.expenses.filter(e => e.id !== b.dataset.delSpend);
+      saveState(); renderSpending();
+    }));
+  }
+}
+
+document.getElementById('btn-apply-range').addEventListener('click', () => {
+  const from = document.getElementById('range-from').value;
+  const to = document.getElementById('range-to').value;
+  if(!from || !to){ alert('Pick both a "From" and "To" date.'); return; }
+  if(from > to){ alert('"From" date must be before "To" date.'); return; }
+  activeRange = { from, to };
+  selectedSpendDay = null;
+  document.getElementById('btn-clear-range').style.display = 'inline-block';
+  renderSpending();
+});
+document.getElementById('btn-clear-range').addEventListener('click', () => {
+  activeRange = null;
+  document.getElementById('btn-clear-range').style.display = 'none';
+  renderSpending();
+});
+
+// ---- Fixed monthly expenses checklist ----
+let fixedViewMonth = new Date(); // transient, independent of the Spending tab's calendar
+let fixedFilterGroup = 'all';     // 'all' | 'food' | 'utility' | 'health' | 'other'
+
+const FIXED_GROUP_CATS = {
+  all: null, // no filter
+  food: ['grocery','restaurants','coffee'],
+  utility: ['utility'],
+  health: ['health'],
+  other: ['other']
+};
+
+document.getElementById('fixed-cat-tabs').addEventListener('click', (e) => {
+  const btn = e.target.closest('.fixed-cat-tab');
+  if(!btn) return;
+  document.querySelectorAll('.fixed-cat-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  fixedFilterGroup = btn.dataset.group;
+  renderFixedExpenses();
+});
+
+function renderFixedExpenses(){
+  const wrap = document.getElementById('fixed-expense-list');
+  const mKey = monthKeyOf(fixedViewMonth);
+  document.getElementById('fixed-month-label').textContent =
+    fixedViewMonth.toLocaleDateString(undefined, {month:'long', year:'numeric'});
+
+  if(!state.fixedChecks[mKey]) state.fixedChecks[mKey] = {};
+  const checksForMonth = state.fixedChecks[mKey];
+
+  wrap.innerHTML = '';
+  const allowedCats = FIXED_GROUP_CATS[fixedFilterGroup];
+  const visibleTemplates = allowedCats
+    ? state.fixedExpenseTemplates.filter(t => allowedCats.includes(t.category))
+    : state.fixedExpenseTemplates;
+
+  if(state.fixedExpenseTemplates.length === 0){
+    wrap.innerHTML = '<div class="reminder-empty">No fixed expenses set up yet — add rent, bills, subscriptions, etc. below.</div>';
+    return;
+  }
+  if(visibleTemplates.length === 0){
+    wrap.innerHTML = '<div class="reminder-empty">Nothing in this category yet.</div>';
+    return;
+  }
+  visibleTemplates.forEach(item => {
+    const linkedExpenseId = checksForMonth[item.id];
+    const isPaid = !!linkedExpenseId;
+    const row = document.createElement('div');
+    row.className = 'fixed-item' + (isPaid ? ' checked' : '');
+    const expectedStr = item.expectedAmount ? `expected ${inr(item.expectedAmount)}` : '';
+    row.innerHTML = `
+      <input type="checkbox" ${isPaid ? 'checked' : ''}>
+      <span class="fi-name">${escapeHtml(item.name)}</span>
+      <span class="fi-expected">${expectedStr}</span>
+      <button title="remove template" data-del-fixed="${item.id}">×</button>
+    `;
+    row.querySelector('input').addEventListener('change', (e) => {
+      if(e.target.checked){
+        const amountStr = prompt(`Amount paid for "${item.name}":`, item.expectedAmount || '');
+        if(amountStr === null){ e.target.checked = false; return; }
+        const amount = parseFloat(amountStr);
+        if(!amount || amount <= 0){ alert('Enter a valid amount.'); e.target.checked = false; return; }
+        const dateForExpense = (mKey === monthKeyOf(new Date())) ? todayKey() : `${mKey}-01`;
+        const newExpense = { id: uid(), date: dateForExpense, category: item.category, amount, note: item.name };
+        state.expenses.push(newExpense);
+        checksForMonth[item.id] = newExpense.id;
+      } else {
+        state.expenses = state.expenses.filter(x => x.id !== linkedExpenseId);
+        delete checksForMonth[item.id];
+      }
+      saveState();
+      renderFixedExpenses();
+      renderSpending();
+    });
+    wrap.appendChild(row);
+  });
+  wrap.querySelectorAll('[data-del-fixed]').forEach(b => b.addEventListener('click', () => {
+    const id = b.dataset.delFixed;
+    if(!confirm('Remove this fixed expense template? (Past logged payments stay in your expense history.)')) return;
+    state.fixedExpenseTemplates = state.fixedExpenseTemplates.filter(t => t.id !== id);
+    saveState(); renderFixedExpenses();
+  }));
+}
+
+document.getElementById('btn-prev-fixed-month').addEventListener('click', () => {
+  fixedViewMonth = new Date(fixedViewMonth.getFullYear(), fixedViewMonth.getMonth()-1, 1);
+  renderFixedExpenses();
+});
+document.getElementById('btn-next-fixed-month').addEventListener('click', () => {
+  fixedViewMonth = new Date(fixedViewMonth.getFullYear(), fixedViewMonth.getMonth()+1, 1);
+  renderFixedExpenses();
+});
+document.getElementById('btn-today-fixed-month').addEventListener('click', () => {
+  fixedViewMonth = new Date();
+  renderFixedExpenses();
+});
+
+document.getElementById('btn-add-fixed').addEventListener('click', () => {
+  const nameInput = document.getElementById('new-fixed-name');
+  const amountInput = document.getElementById('new-fixed-amount');
+  const catSelect = document.getElementById('new-fixed-category');
+  const name = nameInput.value.trim();
+  if(!name) return;
+  const expectedAmount = parseFloat(amountInput.value) || null;
+  state.fixedExpenseTemplates.push({ id: uid(), name, expectedAmount, category: catSelect.value });
+  nameInput.value = '';
+  amountInput.value = '';
+  saveState(); renderFixedExpenses();
+});
+
+document.getElementById('btn-prev-month').addEventListener('click', () => {
+  spendViewMonth = new Date(spendViewMonth.getFullYear(), spendViewMonth.getMonth()-1, 1);
+  selectedSpendDay = null;
+  renderSpending();
+});
+document.getElementById('btn-next-month').addEventListener('click', () => {
+  spendViewMonth = new Date(spendViewMonth.getFullYear(), spendViewMonth.getMonth()+1, 1);
+  selectedSpendDay = null;
+  renderSpending();
+});
+document.getElementById('btn-today-month').addEventListener('click', () => {
+  spendViewMonth = new Date();
+  selectedSpendDay = null;
+  renderSpending();
+});
+document.getElementById('btn-clear-day-filter').addEventListener('click', () => {
+  selectedSpendDay = null;
+  renderSpending();
+});
+
+// ---- Scan expenses from a screenshot (Gemini API) ----
+const GEMINI_KEY_STORAGE = 'mealpilot-gemini-key'; // always browser-local: never synced, never exported
+let scanSelectedFile = null;
+
+function loadGeminiKey(){
+  try{ return localStorage.getItem(GEMINI_KEY_STORAGE) || ''; }catch(e){ return ''; }
+}
+function saveGeminiKey(key){
+  try{ localStorage.setItem(GEMINI_KEY_STORAGE, key); }catch(e){ console.error('Could not save key', e); }
+}
+
+(function initGeminiKeyField(){
+  const existing = loadGeminiKey();
+  const input = document.getElementById('gemini-key-input');
+  const status = document.getElementById('gemini-key-status');
+  if(existing){
+    input.value = existing;
+    status.textContent = '✓ Key saved';
+  }
+  document.getElementById('btn-save-gemini-key').addEventListener('click', () => {
+    const val = input.value.trim();
+    if(!val){ status.textContent = 'Enter a key first.'; return; }
+    saveGeminiKey(val);
+    status.textContent = '✓ Key saved';
+  });
+})();
+
+document.getElementById('btn-choose-scan').addEventListener('click', () => {
+  document.getElementById('scan-file-input').click();
+});
+
+document.getElementById('scan-file-input').addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if(!file) return;
+  scanSelectedFile = file;
+  document.getElementById('scan-file-name').textContent = file.name;
+  document.getElementById('btn-extract-scan').disabled = false;
+});
+
+function fileToBase64(file){
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result.split(',')[1]);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+document.getElementById('btn-extract-scan').addEventListener('click', async () => {
+  if(!scanSelectedFile) return;
+  const statusEl = document.getElementById('scan-status');
+  const resultsEl = document.getElementById('scan-results');
+  const extractBtn = document.getElementById('btn-extract-scan');
+  statusEl.style.display = 'block';
+  statusEl.textContent = 'Reading image…';
+  extractBtn.disabled = true;
+  resultsEl.innerHTML = '';
+
+  const apiKey = loadGeminiKey();
+  if(!apiKey){
+    statusEl.textContent = 'Paste and save your Gemini API key above first.';
+    extractBtn.disabled = false;
+    return;
+  }
+
+  try{
+    const base64Data = await fileToBase64(scanSelectedFile);
+    const mediaType = scanSelectedFile.type || 'image/png';
+
+    statusEl.textContent = 'Extracting purchases… this can take a few seconds.';
+
+    const todayStr = todayKey();
+    const promptText = `You are looking at a screenshot of a purchase/order history from a shopping or delivery app. Extract every individual purchase or transaction you can find.
+
+Return ONLY a raw JSON array (no markdown fences, no commentary, no explanation) where each element has this exact shape:
+{"date": "YYYY-MM-DD or null if not visible in the image", "note": "short item or merchant name", "amount": number (just the numeric value, no currency symbol), "category": one of "grocery","restaurants","coffee","health","utility","other" (your best guess based on the item/merchant name)}
+
+Rules:
+- If a date is visible, use it. If no year is visible, assume the current year. If no date is visible at all for an entry, use null.
+- If multiple items are listed under one order/receipt, extract them as separate entries if individual prices are shown; otherwise extract the order as one entry with the total.
+- Amount must be a plain number (e.g. 249.00), not a string, and not include currency symbols.
+- Today's date for reference is ${todayStr}.
+- If you cannot find any purchases in the image, return an empty array: []`;
+
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${encodeURIComponent(apiKey)}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{
+            parts: [
+              { inline_data: { mime_type: mediaType, data: base64Data } },
+              { text: promptText }
+            ]
+          }]
+        })
+      }
+    );
+
+    const data = await response.json();
+
+    if(data.error){
+      statusEl.textContent = `Gemini API error: ${data.error.message || 'request failed'}. Double-check your API key.`;
+      extractBtn.disabled = false;
+      return;
+    }
+
+    const parts = (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts) || [];
+    const textBlock = parts.map(p => p.text || '').join('\n');
+    const cleaned = textBlock.replace(/```json|```/g, '').trim();
+
+    let items;
+    try{
+      items = JSON.parse(cleaned);
+    }catch(parseErr){
+      statusEl.textContent = "Couldn't parse a clean result from the image. Try a clearer or less cluttered screenshot.";
+      extractBtn.disabled = false;
+      return;
+    }
+
+    if(!Array.isArray(items) || items.length === 0){
+      statusEl.textContent = 'No purchases found in that image. Try a screenshot that more clearly shows item names and prices.';
+      extractBtn.disabled = false;
+      return;
+    }
+
+    statusEl.textContent = `Found ${items.length} item${items.length===1?'':'s'} — review and edit before adding:`;
+    renderScanResults(items);
+  }catch(err){
+    console.error(err);
+    statusEl.textContent = 'Something went wrong extracting from that image. Please try again.';
+  }
+  extractBtn.disabled = false;
+});
+
+function renderScanResults(items){
+  const resultsEl = document.getElementById('scan-results');
+  resultsEl.innerHTML = '';
+  const todayStr = todayKey();
+
+  items.forEach((item, idx) => {
+    const row = document.createElement('div');
+    row.className = 'scan-row';
+    row.dataset.idx = idx;
+    const dateVal = (item.date && /^\d{4}-\d{2}-\d{2}$/.test(item.date)) ? item.date : todayStr;
+    const cat = SPEND_CATS.includes(item.category) ? item.category : 'other';
+    row.innerHTML = `
+      <input type="date" class="scan-date" value="${dateVal}">
+      <input type="text" class="scan-note" value="${escapeHtml(item.note || '')}" placeholder="item / merchant">
+      <input type="number" class="scan-amount" value="${item.amount || ''}" step="0.01" min="0">
+      <select class="scan-cat">
+        ${SPEND_CATS.map(c => `<option value="${c}" ${c===cat?'selected':''}>${SPEND_CAT_LABELS[c]}</option>`).join('')}
+      </select>
+      <button title="discard this row" data-remove-scan>×</button>
+    `;
+    row.querySelector('[data-remove-scan]').addEventListener('click', () => row.remove());
+    resultsEl.appendChild(row);
+  });
+
+  const actions = document.createElement('div');
+  actions.className = 'scan-actions';
+  actions.innerHTML = `
+    <button class="btn btn-primary" id="btn-confirm-scan">Add all to expenses</button>
+    <button class="btn btn-ghost" id="btn-discard-scan">Discard all</button>
+  `;
+  resultsEl.appendChild(actions);
+
+  document.getElementById('btn-confirm-scan').addEventListener('click', () => {
+    const rows = resultsEl.querySelectorAll('.scan-row');
+    let addedCount = 0;
+    rows.forEach(row => {
+      const date = row.querySelector('.scan-date').value;
+      const note = row.querySelector('.scan-note').value.trim();
+      const amount = parseFloat(row.querySelector('.scan-amount').value);
+      const category = row.querySelector('.scan-cat').value;
+      if(!date || !amount || amount <= 0) return;
+      state.expenses.push({ id: uid(), date, category, amount, note });
+      addedCount++;
+    });
+    saveState();
+    resultsEl.innerHTML = '';
+    document.getElementById('scan-status').textContent = `Added ${addedCount} expense${addedCount===1?'':'s'}.`;
+    document.getElementById('scan-file-name').textContent = '';
+    document.getElementById('scan-file-input').value = '';
+    scanSelectedFile = null;
+    document.getElementById('btn-extract-scan').disabled = true;
+    spendViewMonth = new Date();
+    renderSpending();
+  });
+
+  document.getElementById('btn-discard-scan').addEventListener('click', () => {
+    resultsEl.innerHTML = '';
+    document.getElementById('scan-status').style.display = 'none';
+  });
+}
+
+document.getElementById('sp-date').valueAsDate = new Date();
+
+document.getElementById('btn-add-spend').addEventListener('click', () => {
+  const dateVal = document.getElementById('sp-date').value;
+  const amountVal = parseFloat(document.getElementById('sp-amount').value);
+  const category = document.getElementById('sp-category').value;
+  const note = document.getElementById('sp-note').value.trim();
+  const isRecurring = document.getElementById('sp-recurring').checked;
+
+  if(!dateVal){ alert('Pick a date.'); return; }
+  if(!amountVal || amountVal <= 0){ alert('Enter an amount greater than 0.'); return; }
+
+  state.expenses = state.expenses || [];
+  const newExpense = { id: uid(), date: dateVal, category, amount: amountVal, note };
+  state.expenses.push(newExpense);
+
+  if(isRecurring){
+    const templateName = note || SPEND_CAT_LABELS[category];
+    let template = state.fixedExpenseTemplates.find(
+      t => t.name.toLowerCase() === templateName.toLowerCase() && t.category === category
+    );
+    if(!template){
+      template = { id: uid(), name: templateName, expectedAmount: amountVal, category };
+      state.fixedExpenseTemplates.push(template);
+    }
+    const expenseMonthKey = dateVal.slice(0,7);
+    if(!state.fixedChecks[expenseMonthKey]) state.fixedChecks[expenseMonthKey] = {};
+    state.fixedChecks[expenseMonthKey][template.id] = newExpense.id;
+  }
+
+  saveState();
+  document.getElementById('sp-amount').value = '';
+  document.getElementById('sp-note').value = '';
+  document.getElementById('sp-recurring').checked = false;
+  // Jump the calendar to the month of the expense just added, so it's immediately visible
+  spendViewMonth = new Date(dateVal + 'T00:00:00');
+  renderSpending();
+  renderFixedExpenses();
+});
+
+// ---------- Export / Import ----------
+document.getElementById('btn-export').addEventListener('click', () => {
+  const payload = JSON.stringify(state, null, 2);
+  const blob = new Blob([payload], {type: 'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const dateStr = new Date().toISOString().slice(0,10);
+  a.href = url;
+  a.download = `mealpilot-backup-${dateStr}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+});
+
+document.getElementById('btn-import').addEventListener('click', () => {
+  document.getElementById('import-file-input').click();
+});
+
+document.getElementById('import-file-input').addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = (evt) => {
+    let parsed;
+    try{
+      parsed = JSON.parse(evt.target.result);
+    }catch(err){
+      alert('That file doesn\'t look like a valid MealPilot backup (couldn\'t parse JSON).');
+      e.target.value = '';
+      return;
+    }
+    const looksValid = parsed && (Array.isArray(parsed.recipes) || Array.isArray(parsed.expenses) || parsed.weekPlans || parsed.weekPlan);
+    if(!looksValid){
+      alert('That file doesn\'t look like a MealPilot backup.');
+      e.target.value = '';
+      return;
+    }
+    if(!confirm('Import this file? It will replace all current recipes, week plans, grocery list, prep checklist, and spending data currently in the app.')){
+      e.target.value = '';
+      return;
+    }
+    const importedWeekStart = parsed.weekStart || mondayOf(new Date()).toISOString();
+    let weekPlans = parsed.weekPlans || {};
+    // Migrate an older single-week backup format if that's what was imported
+    if(parsed.weekPlan && Object.keys(parsed.weekPlan).length){
+      const legacyKey = weekKeyOf(new Date(importedWeekStart));
+      weekPlans[legacyKey] = weekPlans[legacyKey] || parsed.weekPlan;
+    }
+    state = {
+      recipes: parsed.recipes || [],
+      weekStart: importedWeekStart,
+      weekPlans: weekPlans,
+      grocery: parsed.grocery || [],
+      prep: parsed.prep || [],
+      expenses: parsed.expenses || [],
+      supplements: parsed.supplements || [],
+      supplementChecks: parsed.supplementChecks || {},
+      waterGoal: parsed.waterGoal || 8,
+      waterLog: parsed.waterLog || {},
+      soakItems: parsed.soakItems || [],
+      fixedExpenseTemplates: parsed.fixedExpenseTemplates || [],
+      fixedChecks: parsed.fixedChecks || {}
+    };
+    saveState();
+    render();
+    alert('Import complete.');
+    e.target.value = '';
+  };
+  reader.readAsText(file);
+});
+
+// ---------- Reminders ----------
+function renderReminders(){
+  const key = todayKey();
+  document.getElementById('reminders-date-label').textContent =
+    new Date().toLocaleDateString(undefined, {weekday:'long', month:'long', day:'numeric'});
+
+  // Water
+  const count = state.waterLog[key] || 0;
+  document.getElementById('water-count-num').textContent = count;
+  document.getElementById('water-goal-num').textContent = state.waterGoal;
+
+  // Supplements
+  const checkedToday = new Set(state.supplementChecks[key] || []);
+  const suppWrap = document.getElementById('supplement-list');
+  suppWrap.innerHTML = '';
+  if(state.supplements.length === 0){
+    suppWrap.innerHTML = '<div class="reminder-empty">No supplements added yet.</div>';
+  } else {
+    state.supplements.forEach(s => {
+      const isChecked = checkedToday.has(s.id);
+      const row = document.createElement('div');
+      row.className = 'reminder-item' + (isChecked ? ' checked' : '');
+      row.innerHTML = `
+        <input type="checkbox" ${isChecked ? 'checked' : ''}>
+        <span class="ri-name">${escapeHtml(s.name)}</span>
+        <button title="remove" data-del-supp="${s.id}">×</button>
+      `;
+      row.querySelector('input').addEventListener('change', (e) => {
+        const set = new Set(state.supplementChecks[key] || []);
+        if(e.target.checked) set.add(s.id); else set.delete(s.id);
+        state.supplementChecks[key] = [...set];
+        saveState(); renderReminders();
+      });
+      suppWrap.appendChild(row);
+    });
+  }
+
+  // Overnight soak
+  const soakWrap = document.getElementById('soak-list');
+  soakWrap.innerHTML = '';
+  if(state.soakItems.length === 0){
+    soakWrap.innerHTML = '<div class="reminder-empty">Nothing on the soak list right now.</div>';
+  } else {
+    state.soakItems.forEach(item => {
+      const row = document.createElement('div');
+      row.className = 'reminder-item' + (item.done ? ' checked' : '');
+      row.innerHTML = `
+        <input type="checkbox" ${item.done ? 'checked' : ''}>
+        <span class="ri-name">${escapeHtml(item.note)}</span>
+        <button title="remove" data-del-soak="${item.id}">×</button>
+      `;
+      row.querySelector('input').addEventListener('change', (e) => {
+        item.done = e.target.checked;
+        saveState(); renderReminders();
+      });
+      soakWrap.appendChild(row);
+    });
+  }
+  soakWrap.querySelectorAll('[data-del-soak]').forEach(b => b.addEventListener('click', () => {
+    state.soakItems = state.soakItems.filter(i => i.id !== b.dataset.delSoak);
+    saveState(); renderReminders();
+  }));
+  suppWrap.querySelectorAll('[data-del-supp]').forEach(b => b.addEventListener('click', () => {
+    state.supplements = state.supplements.filter(s => s.id !== b.dataset.delSupp);
+    saveState(); renderReminders();
+  }));
+}
+
+document.getElementById('water-plus').addEventListener('click', () => {
+  const key = todayKey();
+  state.waterLog[key] = (state.waterLog[key] || 0) + 1;
+  saveState(); renderReminders();
+});
+document.getElementById('water-minus').addEventListener('click', () => {
+  const key = todayKey();
+  state.waterLog[key] = Math.max(0, (state.waterLog[key] || 0) - 1);
+  saveState(); renderReminders();
+});
+document.getElementById('water-edit-goal').addEventListener('click', () => {
+  const val = prompt('Daily water goal (glasses):', state.waterGoal);
+  if(val === null) return;
+  const n = parseInt(val);
+  if(n && n > 0){ state.waterGoal = n; saveState(); renderReminders(); }
+});
+
+document.getElementById('btn-add-supplement').addEventListener('click', () => {
+  const input = document.getElementById('new-supplement-name');
+  const name = input.value.trim();
+  if(!name) return;
+  state.supplements.push({ id: uid(), name });
+  input.value = '';
+  saveState(); renderReminders();
+});
+document.getElementById('new-supplement-name').addEventListener('keydown', (e) => {
+  if(e.key === 'Enter') document.getElementById('btn-add-supplement').click();
+});
+
+document.getElementById('btn-add-soak').addEventListener('click', () => {
+  const input = document.getElementById('new-soak-note');
+  const note = input.value.trim();
+  if(!note) return;
+  state.soakItems.push({ id: uid(), note, done: false });
+  input.value = '';
+  saveState(); renderReminders();
+});
+document.getElementById('new-soak-note').addEventListener('keydown', (e) => {
+  if(e.key === 'Enter') document.getElementById('btn-add-soak').click();
+});
+
+loadState();
+</script>
+</body>
+</html>
