@@ -156,7 +156,7 @@
   .field-row .field{ flex:1; }
   .checkline{ display:flex; align-items:center; gap:8px; font-size:13.5px; margin-bottom:14px; }
   .ing-row{ display:flex; gap:6px; margin-bottom:6px; align-items:center; }
-  .ing-row input{ padding:7px 8px; border-radius:5px; border:1px solid var(--paper-line); font-size:13px; }
+  .ing-row input, .ing-row select{ padding:7px 8px; border-radius:5px; border:1px solid var(--paper-line); font-size:13px; }
   .ing-row .ing-name{ flex:2; }
   .ing-row .ing-qty{ flex:0.7; }
   .ing-row .ing-unit{ flex:0.8; }
@@ -403,6 +403,30 @@
   }
   .reminder-empty{ color: var(--sage); font-size:13px; padding: 6px 4px; font-style:italic; }
 
+  .wealth-total{ font-family:'IBM Plex Mono'; font-size:20px; font-weight:600; color: var(--mustard); margin-bottom:12px; }
+  .wealth-row{
+    display:flex; align-items:center; gap:10px; padding:9px 4px;
+    border-bottom: 1px dashed rgba(255,255,255,0.06); font-size:14px;
+  }
+  .wealth-row .wr-date{ font-family:'IBM Plex Mono'; font-size:11.5px; color:var(--sage); min-width:88px; }
+  .wealth-row .wr-name{ flex:1; }
+  .wealth-row .wr-amount{ font-family:'IBM Plex Mono'; font-weight:500; min-width:90px; text-align:right; }
+  .wealth-row button{ background:none; border:none; color:var(--coral); cursor:pointer; font-size:16px; opacity:0.6; }
+  .wealth-row button:hover{ opacity:1; }
+
+  .pantry-row{
+    display:flex; align-items:center; gap:10px; padding:9px 4px;
+    border-bottom: 1px dashed rgba(255,255,255,0.06); font-size:14px;
+  }
+  .pantry-row .pr-name{ flex:1; }
+  .pantry-row .pr-qty{ font-family:'IBM Plex Mono'; font-size:13px; color:var(--chalk); min-width:80px; text-align:right; }
+  .pantry-row .pr-qty-input{
+    width:64px; padding:5px 6px; border-radius:5px; border:1px solid var(--card-line);
+    background: var(--board-dark); color: var(--chalk); font-family:'IBM Plex Mono'; font-size:12.5px; text-align:right;
+  }
+  .pantry-row button{ background:none; border:none; color:var(--coral); cursor:pointer; font-size:16px; opacity:0.6; }
+  .pantry-row button:hover{ opacity:1; }
+
   ::-webkit-scrollbar{ width:8px; }
   ::-webkit-scrollbar-thumb{ background: var(--card-line); border-radius:4px; }
 
@@ -465,6 +489,9 @@
     .donut-card{ flex-direction: column; align-items: stretch; text-align:center; }
     .donut-wrap{ align-self:center; }
     .donut-legend{ width:100%; }
+    #view-wealth .reminder-add-row, #view-pantry .reminder-add-row{ flex-direction: column; }
+    #view-wealth .reminder-add-row input, #view-pantry .reminder-add-row input, #view-pantry .reminder-add-row select{ width:100%; }
+    .wealth-row, .pantry-row{ flex-wrap: wrap; }
   }
 </style>
 </head>
@@ -493,6 +520,8 @@
     <button class="tab-btn" data-view="spending">Spending</button>
     <button class="tab-btn" data-view="fixed">Fixed Expenses</button>
     <button class="tab-btn" data-view="reminders">Reminders</button>
+    <button class="tab-btn" data-view="wealth">Wealth</button>
+    <button class="tab-btn" data-view="pantry">Pantry Stock</button>
   </nav>
 
   <!-- RECIPES -->
@@ -527,7 +556,7 @@
       <div class="spacer"></div>
       <button class="btn btn-primary" id="btn-gen-grocery">Generate grocery list</button>
     </div>
-    <div class="receipt-note">Tick items off as you shop — checked state is saved.</div>
+    <div class="receipt-note" id="receipt-note">Tick items off as you shop — checked state is saved.</div>
     <div id="grocery-list"></div>
     <div class="empty-state" id="grocery-empty" style="display:none;">No list yet — assign your week, then generate the list.</div>
   </section>
@@ -721,6 +750,68 @@
       </div>
     </div>
   </section>
+
+  <!-- WEALTH & SAVINGS -->
+  <section class="view" id="view-wealth">
+    <div style="color:var(--sage); font-size:13.5px; margin-bottom:2px;">All-time overview</div>
+    <div class="spend-summary" id="wealth-summary"></div>
+
+    <div class="reminder-card">
+      <div class="reminder-card-title">💰 Income</div>
+      <div class="wealth-total" id="income-total">₹0.00 total</div>
+      <div id="income-list"></div>
+      <div class="reminder-add-row" style="flex-wrap:wrap;">
+        <input type="date" id="new-income-date" style="flex:1; min-width:130px;">
+        <input type="text" id="new-income-source" placeholder="Source (e.g. Salary, Freelance)" style="flex:2; min-width:160px;">
+        <input type="number" id="new-income-amount" placeholder="₹0.00" step="0.01" min="0" style="flex:1; min-width:100px;">
+        <button class="btn btn-ghost" id="btn-add-income">+ Add</button>
+      </div>
+    </div>
+
+    <div class="reminder-card">
+      <div class="reminder-card-title">📈 Investments</div>
+      <div class="wealth-total" id="invest-total">₹0.00 total</div>
+      <div id="invest-list"></div>
+      <div class="reminder-add-row" style="flex-wrap:wrap;">
+        <input type="date" id="new-invest-date" style="flex:1; min-width:130px;">
+        <input type="text" id="new-invest-name" placeholder="e.g. SIP, Mutual Fund, Stocks" style="flex:2; min-width:160px;">
+        <input type="number" id="new-invest-amount" placeholder="₹0.00" step="0.01" min="0" style="flex:1; min-width:100px;">
+        <button class="btn btn-ghost" id="btn-add-invest">+ Add</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- PANTRY STOCK -->
+  <section class="view" id="view-pantry">
+    <div class="reminder-card">
+      <div class="reminder-card-title">🥫 Pantry Stock</div>
+      <div id="pantry-list"></div>
+      <div class="reminder-add-row" style="flex-wrap:wrap;">
+        <input type="text" id="new-pantry-name" placeholder="e.g. Basmati rice" style="flex:2; min-width:140px;">
+        <input type="number" id="new-pantry-qty" placeholder="Qty" step="any" min="0" style="flex:1; min-width:80px;">
+        <select id="new-pantry-unit" style="flex:1; min-width:100px; padding:8px 9px; border-radius:6px; border:1px solid var(--card-line); background: var(--board-dark); color: var(--chalk); font-family:'Inter'; font-size:13.5px;">
+          <option value="g">g</option>
+          <option value="kg">kg</option>
+          <option value="ml">ml</option>
+          <option value="l">l</option>
+          <option value="tsp">tsp</option>
+          <option value="tbsp">tbsp</option>
+          <option value="cup">cup</option>
+          <option value="pcs">pcs</option>
+          <option value="pack">pack</option>
+        </select>
+        <select id="new-pantry-category" style="flex:1; min-width:110px; padding:8px 9px; border-radius:6px; border:1px solid var(--card-line); background: var(--board-dark); color: var(--chalk); font-family:'Inter'; font-size:13.5px;">
+          <option value="produce">Produce</option>
+          <option value="protein">Protein</option>
+          <option value="dairy">Dairy</option>
+          <option value="pantry" selected>Pantry</option>
+          <option value="frozen">Frozen</option>
+          <option value="other">Other</option>
+        </select>
+        <button class="btn btn-ghost" id="btn-add-pantry">+ Add</button>
+      </div>
+    </div>
+  </section>
 </div>
 
 <!-- MODAL -->
@@ -781,6 +872,18 @@
 
 <script>
 const CATEGORIES = ['produce','protein','dairy','pantry','frozen','other'];
+const UNIT_OPTIONS = ['g','kg','ml','l','tsp','tbsp','cup','pcs','pack'];
+
+// Builds a <select> unit dropdown, preserving any legacy free-typed unit
+// from older data by adding it as an extra option so nothing gets silently lost.
+function buildUnitOptionsHtml(currentUnit){
+  const normalized = (currentUnit || '').trim();
+  const options = [...UNIT_OPTIONS];
+  if(normalized && !options.includes(normalized)){
+    options.unshift(normalized);
+  }
+  return options.map(u => `<option value="${escapeHtml(u)}" ${u === normalized ? 'selected' : ''}>${escapeHtml(u)}</option>`).join('');
+}
 const DAYS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 const MEALS = ['breakfast','lunch','dinner'];
 
@@ -797,7 +900,10 @@ let state = {
   waterLog: {},             // { "YYYY-MM-DD": count }
   soakItems: [],              // [{id, note, done}]
   fixedExpenseTemplates: [],   // [{id, name, expectedAmount, category}]
-  fixedChecks: {}               // { "YYYY-MM": { templateId: expenseId } }
+  fixedChecks: {},               // { "YYYY-MM": { templateId: expenseId } }
+  income: [],                      // [{id, date, source, amount}]
+  investments: [],                  // [{id, date, name, amount}]
+  pantryStock: []                    // [{id, name, qty, unit, category}]
 };
 
 function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
@@ -870,6 +976,9 @@ async function loadState(){
   if(!state.soakItems) state.soakItems = [];
   if(!state.fixedExpenseTemplates) state.fixedExpenseTemplates = [];
   if(!state.fixedChecks) state.fixedChecks = {};
+  if(!state.income) state.income = [];
+  if(!state.investments) state.investments = [];
+  if(!state.pantryStock) state.pantryStock = [];
   // Migrate legacy flat weekPlan (single-week only, pre-navigation) if present
   if(state.weekPlan && Object.keys(state.weekPlan).length){
     const legacyKey = weekKeyOf(new Date(state.weekStart));
@@ -910,6 +1019,8 @@ function render(){
   renderSpending();
   renderFixedExpenses();
   renderReminders();
+  renderWealth();
+  renderPantry();
 }
 
 function renderRecipes(){
@@ -962,7 +1073,7 @@ function ingRow(ing){
   row.innerHTML = `
     <input type="text" class="ing-name" placeholder="ingredient" value="${escapeHtml(ing.name)}">
     <input type="number" class="ing-qty" placeholder="qty" value="${ing.qty}" step="any">
-    <input type="text" class="ing-unit" placeholder="unit" value="${escapeHtml(ing.unit)}">
+    <select class="ing-unit">${buildUnitOptionsHtml(ing.unit)}</select>
     <select class="ing-cat">${CATEGORIES.map(c=>`<option value="${c}" ${c===ing.category?'selected':''}>${c}</option>`).join('')}</select>
     <button type="button" title="remove">×</button>
   `;
@@ -1071,6 +1182,24 @@ document.getElementById('btn-today-week').addEventListener('click', () => {
 const mealModal = document.getElementById('meal-modal-backdrop');
 let currentMealKey = null;
 
+// Deduct (multiplier -1) or restock (multiplier +1) a recipe's ingredients
+// against pantry stock, matched by ingredient name + unit. Items not found
+// in pantry stock are left alone (we don't auto-create new pantry entries).
+function adjustPantryForRecipe(recipeId, multiplier){
+  const r = state.recipes.find(x => x.id === recipeId);
+  if(!r || !r.ingredients) return;
+  r.ingredients.forEach(ing => {
+    if(!ing.name) return;
+    const match = state.pantryStock.find(p =>
+      p.name.trim().toLowerCase() === ing.name.trim().toLowerCase() &&
+      (p.unit||'').trim().toLowerCase() === (ing.unit||'').trim().toLowerCase()
+    );
+    if(match){
+      match.qty = Math.max(0, match.qty + multiplier * (ing.qty || 0));
+    }
+  });
+}
+
 function pickMeal(key, mealType){
   const options = state.recipes.filter(r => r.mealType === mealType);
   if(options.length === 0){ alert(`No ${mealType} recipes in your pool yet — add one first.`); return; }
@@ -1099,6 +1228,8 @@ document.getElementById('meal-modal-cancel').addEventListener('click', () => mea
 document.getElementById('meal-modal-save').addEventListener('click', () => {
   const checked = [...document.querySelectorAll('#meal-options input:checked')].map(cb => cb.value);
   const plan = currentWeekPlan();
+  const previousIds = plan[currentMealKey] || [];
+
   if(checked.length === 0){
     delete plan[currentMealKey];
   } else {
@@ -1108,16 +1239,27 @@ document.getElementById('meal-modal-save').addEventListener('click', () => {
       if(r) r.lastUsed = new Date().toISOString();
     });
   }
+
+  // Newly added recipes deduct from pantry; removed recipes restock it
+  const addedIds = checked.filter(id => !previousIds.includes(id));
+  const removedIds = previousIds.filter(id => !checked.includes(id));
+  addedIds.forEach(id => adjustPantryForRecipe(id, -1));
+  removedIds.forEach(id => adjustPantryForRecipe(id, 1));
+
   saveState();
   mealModal.classList.remove('active');
   renderWeek();
+  renderPantry();
 });
 
 document.getElementById('btn-clear-week').addEventListener('click', () => {
   if(!confirm('Clear this week\'s plan?')) return;
   const key = weekKeyOf(new Date(state.weekStart));
+  const plan = state.weekPlans[key] || {};
+  // Restock pantry for everything being cleared out of the plan
+  Object.values(plan).flat().forEach(id => adjustPantryForRecipe(id, 1));
   state.weekPlans[key] = {};
-  saveState(); renderWeek();
+  saveState(); renderWeek(); renderPantry();
 });
 
 document.getElementById('btn-assign-week').addEventListener('click', () => {
@@ -1136,11 +1278,15 @@ document.getElementById('btn-assign-week').addEventListener('click', () => {
       // pick from the least-recently-used half, randomized, to keep variety
       const candidates = sorted.slice(0, Math.max(1, Math.ceil(sorted.length/2)));
       const pick = candidates[Math.floor(Math.random()*candidates.length)];
-      plan[day+'-'+meal] = [pick.id];
+      const slotKey = day+'-'+meal;
+      // Restock whatever was previously in this slot, then deduct the new pick
+      (plan[slotKey] || []).forEach(id => adjustPantryForRecipe(id, 1));
+      plan[slotKey] = [pick.id];
+      adjustPantryForRecipe(pick.id, -1);
       pick.lastUsed = new Date().toISOString();
     });
   });
-  saveState(); renderWeek();
+  saveState(); renderWeek(); renderPantry();
 });
 
 
@@ -1187,13 +1333,40 @@ document.getElementById('btn-gen-grocery').addEventListener('click', () => {
     const r = state.recipes.find(x=>x.id===recipeId);
     if(!r) return;
     (r.ingredients||[]).forEach(ing => {
-      const key = ing.name.toLowerCase() + '|' + ing.unit + '|' + ing.category;
+      const key = ing.name.toLowerCase() + '|' + (ing.unit||'').toLowerCase() + '|' + ing.category;
       if(!agg[key]) agg[key] = {name: ing.name, unit: ing.unit, category: ing.category, qty: 0};
       agg[key].qty += (ing.qty || 0);
     });
   });
-  state.grocery = Object.values(agg).map(i => ({...i, checked:false})).sort((a,b)=>a.name.localeCompare(b.name));
+
+  // Subtract what's already in pantry stock (matched by name + unit).
+  // This only adjusts the shopping list — it does not touch pantry stock itself.
+  let coveredCount = 0;
+  Object.values(agg).forEach(item => {
+    const stockMatch = state.pantryStock.find(p =>
+      p.name.trim().toLowerCase() === item.name.trim().toLowerCase() &&
+      (p.unit||'').trim().toLowerCase() === (item.unit||'').trim().toLowerCase()
+    );
+    if(stockMatch && stockMatch.qty > 0){
+      const before = item.qty;
+      item.qty = Math.max(0, item.qty - stockMatch.qty);
+      if(item.qty === 0 && before > 0) coveredCount++;
+    }
+  });
+
+  state.grocery = Object.values(agg)
+    .filter(i => i.qty > 0)
+    .map(i => ({...i, checked:false}))
+    .sort((a,b)=>a.name.localeCompare(b.name));
   saveState(); renderGrocery();
+
+  const noteEl = document.getElementById('receipt-note');
+  if(noteEl){
+    noteEl.textContent = coveredCount > 0
+      ? `Tick items off as you shop — ${coveredCount} item${coveredCount===1?'':'s'} skipped because you already have enough in Pantry Stock.`
+      : `Tick items off as you shop — checked state is saved.`;
+  }
+
   document.querySelector('.tab-btn[data-view="grocery"]').click();
 });
 
@@ -1860,7 +2033,10 @@ document.getElementById('import-file-input').addEventListener('change', (e) => {
       waterLog: parsed.waterLog || {},
       soakItems: parsed.soakItems || [],
       fixedExpenseTemplates: parsed.fixedExpenseTemplates || [],
-      fixedChecks: parsed.fixedChecks || {}
+      fixedChecks: parsed.fixedChecks || {},
+      income: parsed.income || [],
+      investments: parsed.investments || [],
+      pantryStock: parsed.pantryStock || []
     };
     saveState();
     render();
@@ -1977,6 +2153,142 @@ document.getElementById('btn-add-soak').addEventListener('click', () => {
 });
 document.getElementById('new-soak-note').addEventListener('keydown', (e) => {
   if(e.key === 'Enter') document.getElementById('btn-add-soak').click();
+});
+
+// ---------- Wealth & Savings ----------
+function renderWealth(){
+  // Income
+  const incomeTotal = state.income.reduce((sum, i) => sum + i.amount, 0);
+  document.getElementById('income-total').textContent = inr(incomeTotal) + ' total';
+  const incomeWrap = document.getElementById('income-list');
+  incomeWrap.innerHTML = '';
+  if(state.income.length === 0){
+    incomeWrap.innerHTML = '<div class="reminder-empty">No income logged yet.</div>';
+  } else {
+    [...state.income].sort((a,b) => new Date(b.date) - new Date(a.date)).forEach(item => {
+      const row = document.createElement('div');
+      row.className = 'wealth-row';
+      row.innerHTML = `
+        <span class="wr-date">${item.date}</span>
+        <span class="wr-name">${escapeHtml(item.source)}</span>
+        <span class="wr-amount">${inr(item.amount)}</span>
+        <button title="remove" data-del-income="${item.id}">×</button>
+      `;
+      incomeWrap.appendChild(row);
+    });
+    incomeWrap.querySelectorAll('[data-del-income]').forEach(b => b.addEventListener('click', () => {
+      state.income = state.income.filter(i => i.id !== b.dataset.delIncome);
+      saveState(); renderWealth();
+    }));
+  }
+
+  // Investments
+  const investTotal = state.investments.reduce((sum, i) => sum + i.amount, 0);
+  document.getElementById('invest-total').textContent = inr(investTotal) + ' total';
+  const investWrap = document.getElementById('invest-list');
+  investWrap.innerHTML = '';
+  if(state.investments.length === 0){
+    investWrap.innerHTML = '<div class="reminder-empty">No investments logged yet.</div>';
+  } else {
+    [...state.investments].sort((a,b) => new Date(b.date) - new Date(a.date)).forEach(item => {
+      const row = document.createElement('div');
+      row.className = 'wealth-row';
+      row.innerHTML = `
+        <span class="wr-date">${item.date}</span>
+        <span class="wr-name">${escapeHtml(item.name)}</span>
+        <span class="wr-amount">${inr(item.amount)}</span>
+        <button title="remove" data-del-invest="${item.id}">×</button>
+      `;
+      investWrap.appendChild(row);
+    });
+    investWrap.querySelectorAll('[data-del-invest]').forEach(b => b.addEventListener('click', () => {
+      state.investments = state.investments.filter(i => i.id !== b.dataset.delInvest);
+      saveState(); renderWealth();
+    }));
+  }
+}
+
+document.getElementById('new-income-date').valueAsDate = new Date();
+document.getElementById('btn-add-income').addEventListener('click', () => {
+  const date = document.getElementById('new-income-date').value;
+  const source = document.getElementById('new-income-source').value.trim();
+  const amount = parseFloat(document.getElementById('new-income-amount').value);
+  if(!date){ alert('Pick a date.'); return; }
+  if(!source){ alert('Enter a source.'); return; }
+  if(!amount || amount <= 0){ alert('Enter a valid amount.'); return; }
+  state.income.push({ id: uid(), date, source, amount });
+  document.getElementById('new-income-source').value = '';
+  document.getElementById('new-income-amount').value = '';
+  saveState(); renderWealth();
+});
+
+document.getElementById('new-invest-date').valueAsDate = new Date();
+document.getElementById('btn-add-invest').addEventListener('click', () => {
+  const date = document.getElementById('new-invest-date').value;
+  const name = document.getElementById('new-invest-name').value.trim();
+  const amount = parseFloat(document.getElementById('new-invest-amount').value);
+  if(!date){ alert('Pick a date.'); return; }
+  if(!name){ alert('Enter a name.'); return; }
+  if(!amount || amount <= 0){ alert('Enter a valid amount.'); return; }
+  state.investments.push({ id: uid(), date, name, amount });
+  document.getElementById('new-invest-name').value = '';
+  document.getElementById('new-invest-amount').value = '';
+  saveState(); renderWealth();
+});
+
+// ---------- Pantry Stock ----------
+function renderPantry(){
+  const wrap = document.getElementById('pantry-list');
+  wrap.innerHTML = '';
+  if(state.pantryStock.length === 0){
+    wrap.innerHTML = '<div class="reminder-empty">No pantry items tracked yet — add what you\'ve got stocked below.</div>';
+    return;
+  }
+  const byCat = {};
+  state.pantryStock.forEach(item => {
+    byCat[item.category] = byCat[item.category] || [];
+    byCat[item.category].push(item);
+  });
+  const CAT_ORDER = ['produce','protein','dairy','pantry','frozen','other'];
+  CAT_ORDER.forEach(cat => {
+    if(!byCat[cat]) return;
+    const block = document.createElement('div');
+    block.className = 'category-block';
+    block.innerHTML = `<div class="category-title">${cat}</div>`;
+    byCat[cat].forEach(item => {
+      const row = document.createElement('div');
+      row.className = 'pantry-row';
+      row.innerHTML = `
+        <span class="pr-name">${escapeHtml(item.name)}</span>
+        <input type="number" class="pr-qty-input" value="${item.qty}" step="any" min="0">
+        <span class="pr-qty">${escapeHtml(item.unit || '')}</span>
+        <button title="remove" data-del-pantry="${item.id}">×</button>
+      `;
+      row.querySelector('.pr-qty-input').addEventListener('change', (e) => {
+        const v = parseFloat(e.target.value);
+        item.qty = isNaN(v) ? 0 : v;
+        saveState();
+      });
+      block.appendChild(row);
+    });
+    wrap.appendChild(block);
+  });
+  wrap.querySelectorAll('[data-del-pantry]').forEach(b => b.addEventListener('click', () => {
+    state.pantryStock = state.pantryStock.filter(i => i.id !== b.dataset.delPantry);
+    saveState(); renderPantry();
+  }));
+}
+
+document.getElementById('btn-add-pantry').addEventListener('click', () => {
+  const name = document.getElementById('new-pantry-name').value.trim();
+  const qty = parseFloat(document.getElementById('new-pantry-qty').value) || 0;
+  const unit = document.getElementById('new-pantry-unit').value.trim();
+  const category = document.getElementById('new-pantry-category').value;
+  if(!name){ alert('Enter an item name.'); return; }
+  state.pantryStock.push({ id: uid(), name, qty, unit, category });
+  document.getElementById('new-pantry-name').value = '';
+  document.getElementById('new-pantry-qty').value = '';
+  saveState(); renderPantry();
 });
 
 loadState();
